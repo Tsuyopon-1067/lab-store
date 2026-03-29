@@ -85,6 +85,7 @@ func main() {
 		admin.GET("/products/:id/prices", handler.GetPriceHistory(database))
 
 		admin.GET("/purchases", handler.ListPurchases(database))
+		admin.GET("/purchases/summary", handler.GetSummary(database))
 
 		admin.GET("/restocks", handler.ListRestocks(database))
 		admin.PUT("/restocks/:id", handler.UpdateRestock(database))
