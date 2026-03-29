@@ -58,6 +58,9 @@ func main() {
 	r.POST("/api/purchases", handler.CreatePurchase(database))
 	r.POST("/api/restocks", handler.CreateRestock(database))
 
+	// 管理者認証
+	r.POST("/api/auth/login", handler.Login(database, cfg))
+
 	// 一般利用者向け（バーコード認証）
 	me := r.Group("/api/me", middleware.BarcodeAuth(database))
 	{
@@ -67,8 +70,10 @@ func main() {
 	}
 
 	// 管理者用エンドポイント
-	admin := r.Group("/api")
+	admin := r.Group("/api", middleware.AdminAuth(database))
 	{
+		admin.POST("/auth/logout", handler.Logout(database))
+
 		admin.GET("/users", handler.ListUsers(database))
 		admin.POST("/users", handler.CreateUser(database))
 		admin.PUT("/users/:id", handler.UpdateUser(database))
