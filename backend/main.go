@@ -9,6 +9,7 @@ import (
 	"purchase-system/config"
 	"purchase-system/db"
 	"purchase-system/handler"
+	"purchase-system/middleware"
 )
 
 func main() {
@@ -54,6 +55,15 @@ func main() {
 	r.GET("/api/users/barcode/:code", handler.GetUserByBarcode(database))
 	r.GET("/api/products/barcode/:code", handler.GetProductByBarcode(database))
 	r.GET("/api/products", handler.ListProducts(database))
+	r.POST("/api/purchases", handler.CreatePurchase(database))
+
+	// 一般利用者向け（バーコード認証）
+	me := r.Group("/api/me", middleware.BarcodeAuth(database))
+	{
+		me.GET("/balance", handler.GetMyBalance(database))
+		me.GET("/purchases", handler.GetMyPurchases(database))
+		me.GET("/restocks", handler.GetMyRestocks(database))
+	}
 
 	// 管理者用エンドポイント
 	admin := r.Group("/api")
@@ -67,6 +77,8 @@ func main() {
 		admin.PUT("/products/:id", handler.UpdateProduct(database))
 		admin.POST("/products/:id/change-price", handler.ChangePrice(database))
 		admin.GET("/products/:id/prices", handler.GetPriceHistory(database))
+
+		admin.GET("/purchases", handler.ListPurchases(database))
 	}
 
 	// ヘルスチェック
