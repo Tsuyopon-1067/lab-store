@@ -1,5 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import Navigation from '$lib/components/Navigation.svelte';
 
 	let { children } = $props();
 </script>
@@ -9,7 +10,10 @@
 </svelte:head>
 
 <div class="app">
-	{@render children()}
+	<Navigation />
+	<main class="main-content">
+		{@render children()}
+	</main>
 </div>
 
 <style>
@@ -71,5 +75,11 @@
 		display: flex;
 		flex-direction: column;
 		flex: 1;
+	}
+
+	.main-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
 	}
 </style>
