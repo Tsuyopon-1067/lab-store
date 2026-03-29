@@ -56,6 +56,7 @@ func main() {
 	r.GET("/api/products/barcode/:code", handler.GetProductByBarcode(database))
 	r.GET("/api/products", handler.ListProducts(database))
 	r.POST("/api/purchases", handler.CreatePurchase(database))
+	r.POST("/api/restocks", handler.CreateRestock(database))
 
 	// 一般利用者向け（バーコード認証）
 	me := r.Group("/api/me", middleware.BarcodeAuth(database))
@@ -79,6 +80,10 @@ func main() {
 		admin.GET("/products/:id/prices", handler.GetPriceHistory(database))
 
 		admin.GET("/purchases", handler.ListPurchases(database))
+
+		admin.GET("/restocks", handler.ListRestocks(database))
+		admin.PUT("/restocks/:id", handler.UpdateRestock(database))
+		admin.DELETE("/restocks/:id", handler.DeleteRestock(database))
 	}
 
 	// ヘルスチェック
