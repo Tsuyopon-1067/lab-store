@@ -24,9 +24,14 @@
 					<a href="/admin">管理画面</a>
 				</li>
 				<li>
-					<form method="POST" action="/admin/logout">
-						<button type="submit" class="logout-btn">ログアウト</button>
-					</form>
+					<button
+						class="logout-btn"
+						onclick={() => {
+							auth.logout();
+						}}
+					>
+						ログアウト
+					</button>
 				</li>
 			{:else}
 				<li>
