@@ -1,0 +1,56 @@
+package model
+
+import "time"
+
+type Purchase struct {
+	ID          int       `json:"id"`
+	UserID      int       `json:"user_id"`
+	PurchasedAt time.Time `json:"purchased_at"`
+}
+
+type PurchaseItem struct {
+	ID         int    `json:"id"`
+	PurchaseID int    `json:"purchase_id"`
+	ProductID  int    `json:"product_id"`
+	Quantity   int    `json:"quantity"`
+	UnitPrice  int    `json:"unit_price"`
+}
+
+type PurchaseDetail struct {
+	Purchase      *Purchase
+	Items         []*PurchaseItemDetail
+	TotalAmount   int
+}
+
+type PurchaseItemDetail struct {
+	Item        *PurchaseItem
+	ProductName string
+	ProductID   int
+	Subtotal    int
+}
+
+type BalanceSummary struct {
+	UserID               int    `json:"user_id"`
+	UserName             string `json:"user_name"`
+	PurchaseUnpaid       int    `json:"purchase_unpaid"`
+	RestockUnclaimed     int    `json:"restock_unclaimed"`
+	NetBalance           int    `json:"net_balance"`
+}
+
+type CreatePurchaseRequest struct {
+	UserBarcode string `json:"user_barcode" binding:"required"`
+	Items       []struct {
+		ProductID int `json:"product_id" binding:"required"`
+		Quantity  int `json:"quantity" binding:"required,min=1"`
+	} `json:"items" binding:"required,min=1"`
+}
+
+type PurchaseResponse struct {
+	PurchaseID  int                  `json:"purchase_id"`
+	UserID      int                  `json:"user_id"`
+	UserName    string               `json:"user_name"`
+	Items       []*PurchaseItemDetail `json:"items"`
+	TotalAmount int                  `json:"total_amount"`
+	PurchasedAt time.Time            `json:"purchased_at"`
+	NewBalance  int                  `json:"new_balance"`
+}
