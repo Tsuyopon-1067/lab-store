@@ -89,6 +89,11 @@ func main() {
 		admin.GET("/payments", handler.ListPayments(database))
 		admin.PUT("/payments/:id", handler.UpdatePayment(database))
 		admin.DELETE("/payments/:id", handler.DeletePayment(database))
+
+		admin.POST("/restock-payments", handler.CreateRestockPayment(database))
+		admin.GET("/restock-payments", handler.ListRestockPayments(database))
+		admin.PUT("/restock-payments/:id", handler.UpdateRestockPayment(database))
+		admin.DELETE("/restock-payments/:id", handler.DeleteRestockPayment(database))
 	}
 
 	// ヘルスチェック
