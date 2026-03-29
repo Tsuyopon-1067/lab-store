@@ -1,13 +1,12 @@
 server:
   port: 8080
-  purchase_timeout_minutes: 5     # 購買画面の無操作タイムアウト（分）
 
 database:
-  path: "./data/purchase.db"
+  path: data/purchase.db
 
 session:
-  timeout_minutes: 30             # 管理者セッションの有効時間（分）
+  timeout_minutes: 30
 
 backup:
-  dir: "./backup"
-  keep_generations: 30            # 保持するバックアップの世代数
+  path: backup
+  interval_minutes: 60
