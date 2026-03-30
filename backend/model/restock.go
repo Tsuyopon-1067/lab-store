@@ -27,6 +27,14 @@ type RestockDetail struct {
 	TotalAmount int
 }
 
+type RestockHistory struct {
+	ID          int                   `json:"id"`
+	TotalAmount int                   `json:"total_amount"`
+	RestockedAt time.Time             `json:"restocked_at"`
+	Note        *string               `json:"note"`
+	Items       []*RestockItemDetail  `json:"items"`
+}
+
 type RestockItemDetail struct {
 	ID        int    `json:"id"`
 	ProductID int    `json:"product_id"`

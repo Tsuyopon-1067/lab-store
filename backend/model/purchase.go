@@ -22,6 +22,13 @@ type PurchaseDetail struct {
 	TotalAmount   int
 }
 
+type PurchaseHistory struct {
+	ID          int                    `json:"id"`
+	PurchasedAt time.Time              `json:"purchased_at"`
+	TotalAmount int                    `json:"total_amount"`
+	Items       []*PurchaseItemDetail  `json:"items"`
+}
+
 type PurchaseItemDetail struct {
 	ID          int    `json:"id"`
 	ProductID   int    `json:"product_id"`
