@@ -354,7 +354,7 @@
         text-align: right;
         font-weight: 600;
         border-bottom: 2px solid #ddd;
-        color: #eee;
+        color: #666;
     }
 
     .summary-table th:first-child {
