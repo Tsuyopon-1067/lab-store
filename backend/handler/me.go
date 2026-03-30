@@ -64,9 +64,11 @@ func GetMyPurchases(db *sql.DB) gin.HandlerFunc {
 				subtotal := item.Quantity * item.UnitPrice
 				totalAmount += subtotal
 				itemDetails = append(itemDetails, &model.PurchaseItemDetail{
-					Item:        item,
+					ID:          item.ID,
+					ProductID:   item.ProductID,
+					Quantity:    item.Quantity,
+					UnitPrice:   item.UnitPrice,
 					ProductName: product.Name,
-					ProductID:   product.ID,
 					Subtotal:    subtotal,
 				})
 			}
