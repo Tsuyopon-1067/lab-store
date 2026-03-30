@@ -25,9 +25,21 @@
 		</div>
 
 		<div class="card">
+			<h3>仕入れ履歴</h3>
+			<p>仕入れ記録を確認・管理</p>
+			<a href="/admin/restocks" class="btn btn-primary">確認</a>
+		</div>
+
+		<div class="card">
 			<h3>支払い管理</h3>
 			<p>購入代金の支払い記録を管理</p>
 			<a href="/admin/payments" class="btn btn-primary">管理</a>
+		</div>
+
+		<div class="card">
+			<h3>立替精算</h3>
+			<p>仕入れ立替の精算記録を管理</p>
+			<a href="/admin/restock-payments" class="btn btn-primary">管理</a>
 		</div>
 
 		<div class="card">
@@ -40,6 +52,12 @@
 			<h3>バックアップ</h3>
 			<p>手動バックアップを実行</p>
 			<a href="/admin/backup" class="btn btn-primary">実行</a>
+		</div>
+
+		<div class="card">
+			<h3>設定</h3>
+			<p>システム設定を管理</p>
+			<a href="/admin/settings" class="btn btn-primary">設定</a>
 		</div>
 	</div>
 </div>
