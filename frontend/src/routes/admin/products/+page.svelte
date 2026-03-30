@@ -345,18 +345,20 @@
                 />
             </div>
 
-            <div class="form-group">
-                <label for="product-price">初期価格（円）</label>
-                <input
-                    type="number"
-                    id="product-price"
-                    bind:value={modalPrice}
-                    placeholder="500"
-                    required
-                    min="0"
-                    disabled={isLoading}
-                />
-            </div>
+            {#if modalMode === "add"}
+                <div class="form-group">
+                    <label for="product-price">初期価格（円）</label>
+                    <input
+                        type="number"
+                        id="product-price"
+                        bind:value={modalPrice}
+                        placeholder="500"
+                        required
+                        min="0"
+                        disabled={isLoading}
+                    />
+                </div>
+            {/if}
 
             <div class="form-group">
                 <label for="product-note">メモ</label>
