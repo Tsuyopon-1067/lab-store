@@ -139,6 +139,33 @@
             modalBarcode = event.detail.barcode;
         }
     }
+
+    async function toggleUserActive(user: AdminUser) {
+        const newActive = user.is_active === 1 ? 0 : 1;
+        errorMessage = "";
+        isLoading = true;
+
+        try {
+            await apiCallWithAuth(`/users/${user.id}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    name: user.name,
+                    is_active: newActive,
+                }),
+            });
+            // ローカル状態を更新
+            users = users.map((u) =>
+                u.id === user.id ? { ...u, is_active: newActive } : u,
+            );
+        } catch (err) {
+            errorMessage =
+                err instanceof Error
+                    ? err.message
+                    : "状態の更新に失敗しました";
+        } finally {
+            isLoading = false;
+        }
+    }
 </script>
 
 <svelte:window on:scan={handleScan} />
@@ -186,12 +213,14 @@
                             <td>{user.name}</td>
                             <td class="barcode-cell">{user.barcode}</td>
                             <td>
-                                <span
+                                <button
                                     class="status-badge"
                                     class:active={user.is_active === 1}
+                                    onclick={() => toggleUserActive(user)}
+                                    disabled={isLoading}
                                 >
                                     {user.is_active === 1 ? "有効" : "無効"}
-                                </span>
+                                </button>
                             </td>
                             <td>{formatDate(user.created_at)}</td>
                             <td class="action-cell">
@@ -395,6 +424,19 @@
         font-weight: 500;
         background-color: #fee;
         color: #c00;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        transition: opacity 0.2s;
+    }
+
+    .status-badge:hover:not(:disabled) {
+        opacity: 0.85;
+    }
+
+    .status-badge:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
     .status-badge.active {

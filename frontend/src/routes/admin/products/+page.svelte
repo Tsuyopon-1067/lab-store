@@ -188,6 +188,34 @@
         if (amount == null) return "—";
         return `¥${amount.toLocaleString("ja-JP")}`;
     }
+
+    async function toggleProductActive(product: ProductWithPrice) {
+        const newActive = product.is_active === 1 ? 0 : 1;
+        errorMessage = "";
+        isLoading = true;
+
+        try {
+            await apiCallWithAuth(`/products/${product.id}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    name: product.name,
+                    note: product.note || "",
+                    is_active: newActive,
+                }),
+            });
+            // ローカル状態を更新
+            products = products.map((p) =>
+                p.id === product.id ? { ...p, is_active: newActive } : p,
+            );
+        } catch (err) {
+            errorMessage =
+                err instanceof Error
+                    ? err.message
+                    : "状態の更新に失敗しました";
+        } finally {
+            isLoading = false;
+        }
+    }
 </script>
 
 <div class="products-page">
@@ -237,12 +265,14 @@
                                 >{formatCurrency(product.current_price)}</td
                             >
                             <td>
-                                <span
+                                <button
                                     class="status-badge"
                                     class:active={product.is_active === 1}
+                                    onclick={() => toggleProductActive(product)}
+                                    disabled={isLoading}
                                 >
                                     {product.is_active === 1 ? "有効" : "無効"}
-                                </span>
+                                </button>
                             </td>
                             <td class="note-cell">{product.note || "—"}</td>
                             <td class="action-cell">
@@ -565,6 +595,19 @@
         font-weight: 500;
         background-color: #fee;
         color: #c00;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        transition: opacity 0.2s;
+    }
+
+    .status-badge:hover:not(:disabled) {
+        opacity: 0.85;
+    }
+
+    .status-badge:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
     .status-badge.active {

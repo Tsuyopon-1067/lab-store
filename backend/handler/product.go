@@ -17,8 +17,9 @@ type CreateProductRequest struct {
 }
 
 type UpdateProductRequest struct {
-	Name string `json:"name" binding:"required"`
-	Note string `json:"note"`
+	Name     string `json:"name" binding:"required"`
+	Note     string `json:"note"`
+	IsActive *int   `json:"is_active"`
 }
 
 type ChangePriceRequest struct {
@@ -110,6 +111,22 @@ func UpdateProduct(db *sql.DB) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product"})
 			return
 		}
+
+		// is_active が送信された場合のみ更新
+		if req.IsActive != nil {
+			if err := repo.SetActive(id, *req.IsActive); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update is_active"})
+				return
+			}
+			// SetActive後に最新データを取得（productWithPrice）
+			updatedProduct, err := repo.GetByBarcode(product.Barcode)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated product"})
+				return
+			}
+			product = updatedProduct
+		}
+
 		c.JSON(http.StatusOK, product)
 	}
 }

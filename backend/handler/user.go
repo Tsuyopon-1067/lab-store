@@ -15,7 +15,8 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Name string `json:"name" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	IsActive *int   `json:"is_active"`
 }
 
 func GetUserByBarcode(db *sql.DB) gin.HandlerFunc {
@@ -85,6 +86,21 @@ func UpdateUser(db *sql.DB) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 			return
 		}
+
+		// is_active が送信された場合のみ更新
+		if req.IsActive != nil {
+			if err := repo.SetActive(id, *req.IsActive); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update is_active"})
+				return
+			}
+			// SetActive後に最新データを取得
+			user, err = repo.GetByID(id)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated user"})
+				return
+			}
+		}
+
 		c.JSON(http.StatusOK, user)
 	}
 }
