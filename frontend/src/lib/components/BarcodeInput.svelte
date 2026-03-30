@@ -12,6 +12,7 @@
         BrowserMultiFormatOneDReader,
         type IScannerControls,
     } from "@zxing/browser";
+    import { DecodeHintType } from "@zxing/library";
 
     interface ScanEvent {
         barcode: string;
@@ -25,10 +26,15 @@
     let scannerControls: IScannerControls | null = null;
 
     // BrowserMultiFormatReader with options
-    const reader = new BrowserMultiFormatOneDReader(undefined, {
-        delayBetweenScanAttempts: 500,
-        delayBetweenScanSuccess: 1500, // 同一バーコードの連続誤発火防止
-    });
+    const reader = new BrowserMultiFormatOneDReader(
+        new Map([
+            [DecodeHintType.TRY_HARDER, true], // 暗い環境や傷んだバーコードでも検出
+        ]),
+        {
+            delayBetweenScanAttempts: 500,
+            delayBetweenScanSuccess: 1500, // 同一バーコードの連続誤発火防止
+        }
+    );
 
     // バーコードスキャン完了時のイベント発火
     const dispatchScan = (barcode: string) => {
