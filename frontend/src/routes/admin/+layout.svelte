@@ -41,16 +41,16 @@
 		display: flex;
 		gap: 0;
 		flex: 1;
-		background-color: white;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		min-height: 100vh;
 	}
 
 	.admin-sidebar {
 		width: 200px;
-		background-color: #2c3e50;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		color: white;
 		padding: 1rem 0;
-		border-right: 1px solid #34495e;
+		border-right: 1px solid rgba(255, 255, 255, 0.1);
 		min-height: calc(100vh - 60px);
 	}
 
@@ -75,14 +75,14 @@
 	}
 
 	.admin-menu a:hover {
-		background-color: #34495e;
+		background-color: rgba(255, 255, 255, 0.1);
 		text-decoration: none;
 	}
 
 	.admin-content {
 		flex: 1;
 		padding: 2rem;
-		background-color: white;
+		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		overflow-y: auto;
 	}
 
