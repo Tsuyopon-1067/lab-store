@@ -265,7 +265,7 @@
 	.empty-notice {
 		text-align: center;
 		padding: 2rem;
-		color: #eee;
+		color: #fff;
 		font-size: 1rem;
 	}
 
