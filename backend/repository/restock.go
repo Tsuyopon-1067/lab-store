@@ -19,6 +19,7 @@ func (r *RestockRepository) Create(userID int, totalAmount int, note string, ite
 	ProductID int
 	Quantity  int
 	UnitPrice int
+	Subtotal  int
 }) (*model.Restock, []*model.RestockItem, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -159,6 +160,7 @@ func (r *RestockRepository) Update(id int, totalAmount int, note string, items [
 	ProductID int
 	Quantity  int
 	UnitPrice int
+	Subtotal  int
 }) error {
 	tx, err := r.db.Begin()
 	if err != nil {

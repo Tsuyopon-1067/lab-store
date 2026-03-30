@@ -42,6 +42,7 @@ type CreateRestockRequest struct {
 		ProductID int `json:"product_id" binding:"required"`
 		Quantity  int `json:"quantity" binding:"required,min=1"`
 		UnitPrice int `json:"unit_price" binding:"required"`
+		Subtotal  int `json:"subtotal"`
 	} `json:"items" binding:"required,min=1"`
 	TotalAmount int    `json:"total_amount" binding:"required"`
 	Note        string `json:"note"`
@@ -52,6 +53,7 @@ type UpdateRestockRequest struct {
 		ProductID int `json:"product_id" binding:"required"`
 		Quantity  int `json:"quantity" binding:"required,min=1"`
 		UnitPrice int `json:"unit_price" binding:"required"`
+		Subtotal  int `json:"subtotal"`
 	} `json:"items"`
 	TotalAmount int    `json:"total_amount" binding:"required"`
 	Note        string `json:"note"`

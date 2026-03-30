@@ -40,6 +40,7 @@ func CreateRestock(db *sql.DB) gin.HandlerFunc {
 			ProductID int
 			Quantity  int
 			UnitPrice int
+			Subtotal  int
 		}
 
 		for _, item := range req.Items {
@@ -53,14 +54,21 @@ func CreateRestock(db *sql.DB) gin.HandlerFunc {
 				return
 			}
 
+			subtotal := item.Subtotal
+			if subtotal == 0 {
+				subtotal = item.Quantity * item.UnitPrice
+			}
+
 			restockItems = append(restockItems, struct {
 				ProductID int
 				Quantity  int
 				UnitPrice int
+				Subtotal  int
 			}{
 				ProductID: item.ProductID,
 				Quantity:  item.Quantity,
 				UnitPrice: item.UnitPrice,
+				Subtotal:  subtotal,
 			})
 		}
 
@@ -74,15 +82,16 @@ func CreateRestock(db *sql.DB) gin.HandlerFunc {
 
 		// 詳細情報を構築
 		var restockDetails []*model.RestockItemDetail
-		for _, item := range items {
+		for i, item := range items {
 			product, _ := productRepo.GetByID(item.ProductID)
+			subtotal := restockItems[i].Subtotal
 			restockDetails = append(restockDetails, &model.RestockItemDetail{
 				ID:          item.ID,
 				ProductID:   item.ProductID,
 				Quantity:    item.Quantity,
 				UnitPrice:   item.UnitPrice,
 				ProductName: product.Name,
-				Subtotal:    item.Quantity * item.UnitPrice,
+				Subtotal:    subtotal,
 			})
 		}
 
@@ -161,6 +170,7 @@ func UpdateRestock(db *sql.DB) gin.HandlerFunc {
 			ProductID int
 			Quantity  int
 			UnitPrice int
+			Subtotal  int
 		}
 
 		for _, item := range req.Items {
@@ -174,14 +184,21 @@ func UpdateRestock(db *sql.DB) gin.HandlerFunc {
 				return
 			}
 
+			subtotal := item.Subtotal
+			if subtotal == 0 {
+				subtotal = item.Quantity * item.UnitPrice
+			}
+
 			restockItems = append(restockItems, struct {
 				ProductID int
 				Quantity  int
 				UnitPrice int
+				Subtotal  int
 			}{
 				ProductID: item.ProductID,
 				Quantity:  item.Quantity,
 				UnitPrice: item.UnitPrice,
+				Subtotal:  subtotal,
 			})
 		}
 
