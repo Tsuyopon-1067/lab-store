@@ -40,7 +40,7 @@ func main() {
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-User-Barcode")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-User-Barcode, X-API-Key")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
@@ -67,6 +67,14 @@ func main() {
 		me.GET("/balance", handler.GetMyBalance(database))
 		me.GET("/purchases", handler.GetMyPurchases(database))
 		me.GET("/restocks", handler.GetMyRestocks(database))
+	}
+
+	// 外部API（APIキー認証）
+	v1 := r.Group("/v1", middleware.APIKeyAuth(database))
+	{
+		v1.GET("/users/:barcode/balance", handler.GetUserBalance(database))
+		v1.GET("/reports/monthly", handler.GetMonthlyReport(database))
+		v1.GET("/products", handler.ListProductsExternal(database))
 	}
 
 	// 管理者用エンドポイント
@@ -100,6 +108,11 @@ func main() {
 		admin.GET("/restock-payments", handler.ListRestockPayments(database))
 		admin.PUT("/restock-payments/:id", handler.UpdateRestockPayment(database))
 		admin.DELETE("/restock-payments/:id", handler.DeleteRestockPayment(database))
+
+		// APIキー管理
+		admin.POST("/api-keys", handler.CreateAPIKey(database))
+		admin.GET("/api-keys", handler.ListAPIKeys(database))
+		admin.DELETE("/api-keys/:id", handler.DeleteAPIKey(database))
 	}
 
 	// ヘルスチェック
