@@ -78,10 +78,10 @@ func (r *UserRepository) Create(name, barcode string) (*model.User, error) {
 	return r.GetByID(int(id))
 }
 
-func (r *UserRepository) Update(id int, name string) (*model.User, error) {
+func (r *UserRepository) Update(id int, name, barcode string) (*model.User, error) {
 	_, err := r.db.Exec(
-		"UPDATE users SET name = ? WHERE id = ?",
-		name, id,
+		"UPDATE users SET name = ?, barcode = ? WHERE id = ?",
+		name, barcode, id,
 	)
 	if err != nil {
 		return nil, err

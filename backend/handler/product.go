@@ -18,6 +18,7 @@ type CreateProductRequest struct {
 
 type UpdateProductRequest struct {
 	Name     string `json:"name" binding:"required"`
+	Barcode  string `json:"barcode" binding:"required"`
 	Note     string `json:"note"`
 	IsActive *int   `json:"is_active"`
 }
@@ -106,7 +107,7 @@ func UpdateProduct(db *sql.DB) gin.HandlerFunc {
 		}
 
 		repo := repository.NewProductRepository(db)
-		product, err := repo.Update(id, req.Name, req.Note)
+		product, err := repo.Update(id, req.Name, req.Barcode, req.Note)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product"})
 			return

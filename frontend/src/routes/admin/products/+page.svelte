@@ -60,7 +60,7 @@
     function openEditModal(product: ProductWithPrice) {
         modalMode = "edit";
         modalName = product.name;
-        modalBarcode = "";
+        modalBarcode = product.barcode;
         modalPrice = product.current_price.toString();
         modalNote = product.note || "";
         editingProductId = product.id;
@@ -209,9 +209,7 @@
             );
         } catch (err) {
             errorMessage =
-                err instanceof Error
-                    ? err.message
-                    : "状態の更新に失敗しました";
+                err instanceof Error ? err.message : "状態の更新に失敗しました";
         } finally {
             isLoading = false;
         }
@@ -333,32 +331,30 @@
                 />
             </div>
 
-            {#if modalMode === "add"}
-                <div class="form-group">
-                    <label for="product-barcode">バーコード</label>
-                    <input
-                        type="text"
-                        id="product-barcode"
-                        bind:value={modalBarcode}
-                        placeholder="4912345678901"
-                        required
-                        disabled={isLoading}
-                    />
-                </div>
+            <div class="form-group">
+                <label for="product-barcode">バーコード</label>
+                <input
+                    type="text"
+                    id="product-barcode"
+                    bind:value={modalBarcode}
+                    placeholder="4912345678901"
+                    required
+                    disabled={isLoading}
+                />
+            </div>
 
-                <div class="form-group">
-                    <label for="product-price">初期価格（円）</label>
-                    <input
-                        type="number"
-                        id="product-price"
-                        bind:value={modalPrice}
-                        placeholder="500"
-                        required
-                        min="0"
-                        disabled={isLoading}
-                    />
-                </div>
-            {/if}
+            <div class="form-group">
+                <label for="product-price">初期価格（円）</label>
+                <input
+                    type="number"
+                    id="product-price"
+                    bind:value={modalPrice}
+                    placeholder="500"
+                    required
+                    min="0"
+                    disabled={isLoading}
+                />
+            </div>
 
             <div class="form-group">
                 <label for="product-note">メモ</label>

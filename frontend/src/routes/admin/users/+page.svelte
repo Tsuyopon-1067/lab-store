@@ -2,9 +2,9 @@
     import { onMount } from "svelte";
     import { apiCallWithAuth } from "$lib/api";
     import BarcodeInput from "$lib/components/BarcodeInput.svelte";
-    import type { AdminUser } from "$lib/types";
+    import type { User } from "$lib/types";
 
-    let users: AdminUser[] = $state([]);
+    let users: User[] = $state([]);
     let isLoading = $state(false);
     let errorMessage = $state("");
 
@@ -28,7 +28,7 @@
         isLoading = true;
         errorMessage = "";
         try {
-            const data = await apiCallWithAuth<AdminUser[]>("/users");
+            const data = await apiCallWithAuth<User[]>("/users");
             users = data || [];
         } catch (err) {
             errorMessage =
@@ -48,10 +48,10 @@
         showModal = true;
     }
 
-    function openEditModal(user: AdminUser) {
+    function openEditModal(user: User) {
         modalMode = "edit";
         modalName = user.name;
-        modalBarcode = "";
+        modalBarcode = user.barcode;
         editingUserId = user.id;
         showModal = true;
     }
@@ -99,7 +99,7 @@
         }
     }
 
-    function openDeleteConfirm(user: AdminUser) {
+    function openDeleteConfirm(user: User) {
         deleteTargetId = user.id;
         deleteTargetName = user.name;
         showDeleteConfirm = true;
@@ -140,7 +140,7 @@
         }
     }
 
-    async function toggleUserActive(user: AdminUser) {
+    async function toggleUserActive(user: User) {
         const newActive = user.is_active === 1 ? 0 : 1;
         errorMessage = "";
         isLoading = true;
@@ -159,9 +159,7 @@
             );
         } catch (err) {
             errorMessage =
-                err instanceof Error
-                    ? err.message
-                    : "状態の更新に失敗しました";
+                err instanceof Error ? err.message : "状態の更新に失敗しました";
         } finally {
             isLoading = false;
         }
@@ -274,12 +272,10 @@
                 />
             </div>
 
-            {#if modalMode === "add"}
-                <div class="form-group">
-                    <label>バーコード</label>
-                    <BarcodeInput bind:input={modalBarcode} />
-                </div>
-            {/if}
+            <div class="form-group">
+                <label>バーコード</label>
+                <BarcodeInput bind:input={modalBarcode} />
+            </div>
 
             <div class="modal-footer">
                 <button
