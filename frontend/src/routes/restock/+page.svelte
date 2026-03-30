@@ -17,11 +17,18 @@
 	let isLoading = $state(false);
 	let restockNote = $state('');
 
-	// モーダル状態
+	// モーダル状態（バーコード検索）
 	let showModal = $state(false);
 	let modalProduct: Product | null = $state(null);
 	let modalQuantity = $state(1);
 	let modalUnitPrice = $state(0);
+
+	// モーダル状態（手動追加）
+	let showManualModal = $state(false);
+	let manualProductName = $state('');
+	let manualProductBarcode = $state('');
+	let manualQuantity = $state(1);
+	let manualUnitPrice = $state(0);
 
 	// タイムアウト設定
 	const TIMEOUT_MS = 5 * 60 * 1000; // 5分
@@ -44,6 +51,9 @@
 		restockNote = '';
 		showModal = false;
 		modalProduct = null;
+		showManualModal = false;
+		manualProductName = '';
+		manualProductBarcode = '';
 		if (timeoutId) clearTimeout(timeoutId);
 	}
 
@@ -115,6 +125,43 @@
 
 		showModal = false;
 		modalProduct = null;
+		errorMessage = '';
+		resetTimeout();
+	}
+
+	function addManualProductToRestockList() {
+		if (!manualProductName.trim()) {
+			errorMessage = '商品名を入力してください';
+			return;
+		}
+		if (manualQuantity < 1) {
+			errorMessage = '数量は1以上にしてください';
+			return;
+		}
+		if (manualUnitPrice < 0) {
+			errorMessage = '単価は0以上にしてください';
+			return;
+		}
+
+		// 手動入力商品には一意のID（負数）を付与
+		const tempId = -(Date.now());
+
+		const newItem: RestockItem = {
+			product_id: tempId,
+			product_name: manualProductName,
+			quantity: manualQuantity,
+			unit_price: manualUnitPrice,
+			subtotal: manualQuantity * manualUnitPrice,
+		};
+
+		restockItems = [...restockItems, newItem];
+
+		// モーダルをクローズしてリセット
+		showManualModal = false;
+		manualProductName = '';
+		manualProductBarcode = '';
+		manualQuantity = 1;
+		manualUnitPrice = 0;
 		errorMessage = '';
 		resetTimeout();
 	}
@@ -225,6 +272,12 @@
 							<h3>商品追加</h3>
 							<p class="hint">商品バーコードをスキャンしてください</p>
 							<BarcodeInput />
+							<button
+								onclick={() => (showManualModal = true)}
+								class="btn-manual-add"
+							>
+								手動で商品を追加
+							</button>
 						</div>
 
 						<div class="restock-list">
@@ -383,6 +436,64 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- 手動追加モーダル -->
+	{#if showManualModal}
+		<div class="modal-overlay" onclick={() => (showManualModal = false)}>
+			<div class="modal" onclick={(e) => e.stopPropagation()}>
+				<h3>商品を手動追加</h3>
+
+				<div class="form-group">
+					<label for="productName">商品名 <span class="required">*</span></label>
+					<input
+						id="productName"
+						type="text"
+						bind:value={manualProductName}
+						placeholder="商品名を入力"
+						class="form-input"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="productBarcode">バーコード（オプション）</label>
+					<input
+						id="productBarcode"
+						type="text"
+						bind:value={manualProductBarcode}
+						placeholder="バーコード（ない場合は空白）"
+						class="form-input"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="manualQuantity">数量 <span class="required">*</span></label>
+					<input
+						id="manualQuantity"
+						type="number"
+						min="1"
+						bind:value={manualQuantity}
+						class="form-input"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="manualUnitPrice">単価（円） <span class="required">*</span></label>
+					<input
+						id="manualUnitPrice"
+						type="number"
+						min="0"
+						bind:value={manualUnitPrice}
+						class="form-input"
+					/>
+				</div>
+
+				<div class="modal-actions">
+					<button onclick={() => (showManualModal = false)} class="btn-cancel">キャンセル</button>
+					<button onclick={addManualProductToRestockList} class="btn-add">追加</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -483,6 +594,24 @@
 		color: #666;
 		font-size: 0.95rem;
 		margin-top: 0.5rem;
+	}
+
+	.btn-manual-add {
+		width: 100%;
+		padding: 0.75rem;
+		background-color: #28a745;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		margin-top: 1rem;
+		transition: background-color 0.2s;
+	}
+
+	.btn-manual-add:hover {
+		background-color: #218838;
 	}
 
 	.restock-list {
@@ -589,6 +718,10 @@
 		margin-bottom: 0.5rem;
 		font-weight: 600;
 		color: #2c3e50;
+	}
+
+	.required {
+		color: #ff4444;
 	}
 
 	.form-textarea {
