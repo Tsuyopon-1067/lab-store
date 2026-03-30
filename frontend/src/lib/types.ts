@@ -115,7 +115,7 @@ export interface ProductWithPrice {
 	barcode: string;
 	is_active: number;
 	note?: string;
-	price: number;
+	current_price: number;
 	created_at: string;
 }
 

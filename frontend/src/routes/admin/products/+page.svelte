@@ -61,7 +61,7 @@
         modalMode = "edit";
         modalName = product.name;
         modalBarcode = "";
-        modalPrice = product.price.toString();
+        modalPrice = product.current_price.toString();
         modalNote = product.note || "";
         editingProductId = product.id;
         showModal = true;
@@ -122,7 +122,7 @@
     function openPriceModal(product: ProductWithPrice) {
         priceProductId = product.id;
         priceProductName = product.name;
-        newPrice = product.price.toString();
+        newPrice = product.current_price.toString();
         showPriceModal = true;
     }
 
@@ -234,7 +234,7 @@
                             <td>{product.name}</td>
                             <td class="barcode-cell">{product.barcode}</td>
                             <td class="price-cell"
-                                >{formatCurrency(product.price)}</td
+                                >{formatCurrency(product.current_price)}</td
                             >
                             <td>
                                 <span
