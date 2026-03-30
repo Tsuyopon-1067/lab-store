@@ -227,10 +227,7 @@
 			{#if modalMode === 'add'}
 				<div class="form-group">
 					<label>バーコード</label>
-					<BarcodeInput />
-					{#if modalBarcode}
-						<p class="scanned-value">スキャン済み: <strong>{modalBarcode}</strong></p>
-					{/if}
+					<BarcodeInput bind:input={modalBarcode} />
 				</div>
 			{/if}
 
@@ -555,16 +552,6 @@
 	input:disabled {
 		background-color: #f5f5f5;
 		cursor: not-allowed;
-	}
-
-	.scanned-value {
-		margin: 0.75rem 0 0 0;
-		padding: 0.75rem;
-		background-color: #e8f5e9;
-		border-left: 3px solid #4caf50;
-		color: #2e7d32;
-		border-radius: 4px;
-		font-size: 0.95rem;
 	}
 
 	.modal-footer {
