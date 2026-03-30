@@ -107,7 +107,6 @@
             const barcode = input.trim();
             if (barcode.length > 0) {
                 dispatchScan(barcode);
-                input = "";
             }
         }
     }
