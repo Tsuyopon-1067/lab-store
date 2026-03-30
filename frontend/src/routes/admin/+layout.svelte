@@ -42,6 +42,7 @@
 		gap: 0;
 		flex: 1;
 		background-color: white;
+		min-height: 100vh;
 	}
 
 	.admin-sidebar {
