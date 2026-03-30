@@ -10,6 +10,7 @@ import (
 	"purchase-system/db"
 	"purchase-system/handler"
 	"purchase-system/middleware"
+	"purchase-system/service"
 )
 
 func main() {
@@ -124,6 +125,9 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+
+	// 定期バックアップスケジューラー起動
+	service.StartDailyBackupScheduler(database, cfg)
 
 	// サーバー起動
 	port := fmt.Sprintf(":%d", cfg.Server.Port)

@@ -3,6 +3,7 @@ package service
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -56,4 +57,31 @@ func (s *BackupService) CreateBackup() (*model.Backup, error) {
 
 func (s *BackupService) ListBackups() ([]*model.Backup, error) {
 	return s.repo.ListAll()
+}
+
+// StartDailyBackupScheduler starts a goroutine that runs a backup every day at midnight (local time).
+func StartDailyBackupScheduler(db *sql.DB, cfg *config.Config) {
+	svc := NewBackupService(db, cfg)
+	go func() {
+		for {
+			// Calculate time until next midnight
+			now := time.Now()
+			nextMidnight := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+			waitDuration := time.Until(nextMidnight)
+
+			// Log next execution time
+			log.Printf("daily backup scheduler: next run at %s", nextMidnight.Format("2006-01-02 15:04:05"))
+
+			// Wait until midnight
+			time.Sleep(waitDuration)
+
+			// Execute backup
+			backup, err := svc.CreateBackup()
+			if err != nil {
+				log.Printf("auto backup failed: %v", err)
+			} else {
+				log.Printf("auto backup created: %s", backup.Filename)
+			}
+		}
+	}()
 }
