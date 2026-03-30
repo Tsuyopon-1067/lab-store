@@ -281,35 +281,92 @@ sudo certbot renew --force-renewal
 
 ---
 
-## 8. バックアップ戦略
+## 8. バックアップと復帰
 
-### 自動バックアップ
+### 概要
 
-コンテナ内部で `db/backups.go` で実装されているバックアップ機能が動作しています。
+バックアップは管理画面から手動で実行できます。バックアップファイルは SQLite の `VACUUM INTO` コマンドで作成された完全なデータベースファイルです。
 
-### 手動バックアップ
+- **バックアップ保存先**: `./backup/` ディレクトリ
+- **ファイル名形式**: `backup-YYYY-MM-DD_HH-MM-SS.db`
+- **バックアップ方式**: SQLite `VACUUM INTO`（WALモード互換のオンラインバックアップ）
 
+### 手動バックアップの実行
+
+管理画面から操作：
+1. `http://localhost:3000/admin/backup` へアクセス
+2. 「バックアップを作成」ボタンをクリック
+3. バックアップレコードに記録され、`./backup/backup-YYYY-MM-DD_HH-MM-SS.db` に保存
+
+コマンドラインでの確認：
 ```bash
-# バックアップディレクトリを確認
-ls -la ./backup/
+# バックアップファイル一覧表示
+ls -lah ./backup/
 
-# 手動でバックアップを取得
-podman-compose exec backend sqlite3 /app/data/purchase.db \
-  ".backup /app/backup/manual_$(date +%Y%m%d_%H%M%S).sqlite"
+# 最新のバックアップを確認
+ls -lt ./backup/ | head -5
+```
 
-# バックアップを外部に転送
+### バックアップの外部転送
+
+定期的なオフサイト保管：
+```bash
+# 外部バックアップサーバーにコピー
 scp -r ./backup/ backup-server:/backups/purchase-system/
+
+# または rsync で同期
+rsync -avz ./backup/ backup-server:/backups/purchase-system/
 ```
 
-### データベースのリストア
+### データベースの復帰（リストア）
+
+**⚠️ 重要: サーバーを必ず停止してから実行してください。**
 
 ```bash
-# バックアップファイルをコンテナ環境にコピー
-cp /path/to/backup.sqlite ./data/purchase.db
+# 1. サーバーを停止
+podman-compose down
+# または
+docker-compose down
 
-# コンテナを再起動
-podman-compose restart backend
+# 2. 古い DB ファイルをすべて削除（WAL ファイルを含む）
+cd data
+rm -f purchase.db purchase.db-wal purchase.db-shm
+cd ..
+
+# 3. バックアップファイルをコピー
+cp ./backup/backup-2026-03-31_12-34-56.db ./data/purchase.db
+# または
+# cp /path/to/external/backup.db ./data/purchase.db
+
+# 4. サーバーを再起動
+podman-compose up -d
+# または
+# docker-compose up -d
+
+# 5. ログで正常起動を確認
+podman-compose logs -f backend
 ```
+
+**復帰確認:**
+```bash
+# ヘルスチェック
+curl http://localhost:3000/health
+
+# 管理画面でデータ確認
+# http://localhost:3000/admin にアクセス
+```
+
+### 自動バックアップの設定
+
+`config.yaml` で自動バックアップ間隔を設定（オプション）：
+
+```yaml
+backup:
+  path: ../backup
+  interval_minutes: 60  # 60分ごと（0で無効化）
+```
+
+> 注: 現在の実装では自動バックアップ実行スケジューラーは未実装。定期バックアップが必要な場合は、外部の cron ジョブで `/api/backup` エンドポイント（POST）を呼び出してください。
 
 ---
 
@@ -443,32 +500,4 @@ podman-compose logs -f
 - session.timeout_minutes: 30（セキュリティ）
 - backup.interval_minutes: 60（1時間ごとにバックアップ）
 - https.enabled: true
-
-### 自動バックアップ
-
-コンテナ内部で `db/backups.go` で実装されているバックアップ機能が動作しています。
-
-### 手動バックアップ
-
-```bash
-# バックアップディレクトリを確認
-ls -la ./backup/
-
-# 手動でバックアップを取得
-podman-compose exec backend sqlite3 /app/data/purchase.db \
-  ".backup /app/backup/manual_$(date +%Y%m%d_%H%M%S).sqlite"
-
-# バックアップを外部に転送
-scp -r ./backup/ backup-server:/backups/purchase-system/
-```
-
-### データベースのリストア
-
-```bash
-# バックアップファイルをコンテナ環境にコピー
-cp /path/to/backup.sqlite ./data/purchase.db
-
-# コンテナを再起動
-podman-compose restart backend
-```
 
