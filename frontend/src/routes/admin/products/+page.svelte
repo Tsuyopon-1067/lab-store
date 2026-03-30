@@ -81,15 +81,15 @@
         isLoading = true;
 
         try {
+            if (!modalBarcode.trim()) {
+                errorMessage = "バーコードを入力してください";
+                return;
+            }
+            if (!modalPrice || modalPrice === "") {
+                errorMessage = "価格を入力してください";
+                return;
+            }
             if (modalMode === "add") {
-                if (!modalBarcode.trim()) {
-                    errorMessage = "バーコードを入力してください";
-                    return;
-                }
-                if (!modalPrice || modalPrice === "") {
-                    errorMessage = "価格を入力してください";
-                    return;
-                }
                 await apiCallWithAuth("/products", {
                     method: "POST",
                     body: JSON.stringify({
@@ -105,6 +105,8 @@
                     method: "PUT",
                     body: JSON.stringify({
                         name: modalName,
+                        barcode: modalBarcode,
+                        price: parseInt(modalPrice),
                         note: modalNote || undefined,
                     }),
                 });

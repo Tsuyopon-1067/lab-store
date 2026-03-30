@@ -70,11 +70,12 @@
         isLoading = true;
 
         try {
+            if (!modalBarcode.trim()) {
+                errorMessage = "バーコードを入力してください";
+                return;
+            }
+
             if (modalMode === "add") {
-                if (!modalBarcode.trim()) {
-                    errorMessage = "バーコードを入力してください";
-                    return;
-                }
                 await apiCallWithAuth("/users", {
                     method: "POST",
                     body: JSON.stringify({
@@ -86,7 +87,10 @@
                 // edit
                 await apiCallWithAuth(`/users/${editingUserId}`, {
                     method: "PUT",
-                    body: JSON.stringify({ name: modalName }),
+                    body: JSON.stringify({
+                        name: modalName,
+                        barcode: modalBarcode,
+                    }),
                 });
             }
             closeModal();
