@@ -203,7 +203,7 @@
 	.empty-notice {
 		text-align: center;
 		padding: 2rem;
-		color: #eee;
+		color: #2c3e50;
 		font-size: 1rem;
 	}
 
@@ -354,7 +354,7 @@
 
 	.modal-body p {
 		margin: 0.5rem 0;
-		color: #eee;
+		color: #2c3e50;
 	}
 
 	.notice {
@@ -373,7 +373,7 @@
 
 	.btn-secondary {
 		background-color: #f0f0f0;
-		color: #eee;
+		color: #2c3e50;
 		border: 1px solid #ddd;
 	}
 
