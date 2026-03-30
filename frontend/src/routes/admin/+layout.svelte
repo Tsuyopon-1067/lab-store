@@ -41,6 +41,7 @@
 		display: flex;
 		gap: 0;
 		flex: 1;
+		background-color: white;
 	}
 
 	.admin-sidebar {
@@ -80,7 +81,7 @@
 	.admin-content {
 		flex: 1;
 		padding: 2rem;
-		background-color: #f5f5f5;
+		background-color: white;
 		overflow-y: auto;
 	}
 
