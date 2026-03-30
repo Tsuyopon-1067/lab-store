@@ -19,3 +19,4 @@ frontend/bun.lockb
 # OS
 .DS_Store
 Thumbs.db
+compose.override.yaml
