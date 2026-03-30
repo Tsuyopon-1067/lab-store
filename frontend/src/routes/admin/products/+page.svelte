@@ -86,7 +86,7 @@
                     errorMessage = "バーコードを入力してください";
                     return;
                 }
-                if (!modalPrice.trim()) {
+                if (!modalPrice || modalPrice === "") {
                     errorMessage = "価格を入力してください";
                     return;
                 }
@@ -131,7 +131,7 @@
     }
 
     async function handlePriceChange() {
-        if (!newPrice.trim() || !priceProductId) {
+        if (!newPrice || newPrice === "" || !priceProductId) {
             errorMessage = "価格を入力してください";
             return;
         }

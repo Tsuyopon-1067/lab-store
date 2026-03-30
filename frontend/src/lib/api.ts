@@ -26,8 +26,22 @@ export async function apiCall<T>(
 	});
 
 	if (!response.ok) {
-		const error = await response.json().catch(() => ({}));
-		throw new Error(error.message || `API error: ${response.status}`);
+		let errorMsg = `API error: ${response.status}`;
+		try {
+			const error = await response.json();
+			errorMsg = error.message || error.error || errorMsg;
+		} catch {
+			// JSON parse failed, try to get text
+			try {
+				const text = await response.text();
+				if (text) {
+					errorMsg = text.slice(0, 200); // Limit length
+				}
+			} catch {
+				// Ignore text parsing error
+			}
+		}
+		throw new Error(errorMsg);
 	}
 
 	return response.json();
