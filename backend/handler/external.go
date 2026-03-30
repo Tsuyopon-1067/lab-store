@@ -129,6 +129,68 @@ func GetMonthlyReport(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+func GetUserBalanceByName(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		name := c.Param("name")
+		if name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
+			return
+		}
+
+		userRepo := repository.NewUserRepository(db)
+		users, err := userRepo.GetByName(name)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get users"})
+			return
+		}
+
+		if len(users) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+
+		// Fetch current-month summary once (covers all users)
+		summaryRepo := repository.NewSummaryRepository(db)
+		now := time.Now()
+		firstDay := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		lastDay := firstDay.AddDate(0, 1, -1).Add(time.Hour*23 + time.Minute*59 + time.Second*59)
+
+		report, err := summaryRepo.GetSummary(firstDay, lastDay)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get balance"})
+			return
+		}
+
+		// Build a userID → SummaryItem index for O(1) lookups
+		summaryByUserID := make(map[int]*model.SummaryItem)
+		if report != nil {
+			for _, s := range report.Users {
+				summaryByUserID[s.UserID] = s
+			}
+		}
+
+		results := make([]model.UserBalanceResponse, 0, len(users))
+		for _, user := range users {
+			resp := model.UserBalanceResponse{
+				Barcode:  user.Barcode,
+				UserName: user.Name,
+			}
+			if s, ok := summaryByUserID[user.ID]; ok {
+				resp.PurchaseTotal = s.PurchaseTotal
+				resp.PurchasePaid = s.PurchasePaid
+				resp.PurchaseUnpaid = s.PurchaseUnpaid
+				resp.RestockTotal = s.RestockTotal
+				resp.RestockSettled = s.RestockSettled
+				resp.RestockUnclaimed = s.RestockUnclaimed
+				resp.NetBalance = s.NetBalance
+			}
+			results = append(results, resp)
+		}
+
+		c.JSON(http.StatusOK, results)
+	}
+}
+
 func ListProductsExternal(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		productRepo := repository.NewProductRepository(db)
