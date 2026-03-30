@@ -416,7 +416,7 @@
 	h1 {
 		margin: 0;
 		font-size: 1.8rem;
-		color: #2c3e50;
+		color: #fff;
 	}
 
 	.alert {
@@ -436,7 +436,7 @@
 	.empty-notice {
 		text-align: center;
 		padding: 2rem;
-		color: #666;
+		color: #eee;
 		font-size: 1rem;
 	}
 
