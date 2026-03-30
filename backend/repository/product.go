@@ -69,6 +69,30 @@ func (r *ProductRepository) ListAll() ([]*model.ProductWithPrice, error) {
 	return products, rows.Err()
 }
 
+func (r *ProductRepository) Search(query string) ([]*model.ProductWithPrice, error) {
+	rows, err := r.db.Query(`
+		SELECT p.id, p.name, p.barcode, p.is_active, p.note, COALESCE(pp.price, 0), p.created_at
+		FROM products p
+		LEFT JOIN product_prices pp ON pp.product_id = p.id AND pp.valid_to IS NULL
+		WHERE p.name LIKE ? OR p.barcode LIKE ?
+		ORDER BY p.created_at DESC
+	`, "%"+query+"%", "%"+query+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []*model.ProductWithPrice
+	for rows.Next() {
+		product := &model.ProductWithPrice{}
+		if err := rows.Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.Price, &product.CreatedAt); err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, rows.Err()
+}
+
 func (r *ProductRepository) Create(name, barcode, note string, price int) (*model.ProductWithPrice, error) {
 	tx, err := r.db.Begin()
 	if err != nil {

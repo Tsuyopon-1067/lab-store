@@ -54,6 +54,24 @@ func ListProducts(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+func SearchProducts(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		query := c.Query("q")
+		if query == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Search query is required"})
+			return
+		}
+
+		repo := repository.NewProductRepository(db)
+		products, err := repo.Search(query)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+		c.JSON(http.StatusOK, products)
+	}
+}
+
 func CreateProduct(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req CreateProductRequest
