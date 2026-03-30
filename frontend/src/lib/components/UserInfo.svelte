@@ -15,10 +15,10 @@
 
 <div class="user-info">
 	<div class="user-header">
-		<h2>{balance.user_name}</h2>
 		{#if onReset}
-			<button onclick={onReset} class="btn-reset">利用者変更</button>
+			<button onclick={onReset} class="btn-reset">戻る</button>
 		{/if}
+		<h2>{balance.user_name}</h2>
 	</div>
 
 	<div class="balance-details">
@@ -54,8 +54,8 @@
 
 	.user-header {
 		display: flex;
-		justify-content: space-between;
 		align-items: center;
+		gap: 1rem;
 		margin-bottom: 1.5rem;
 		border-bottom: 2px solid #f0f0f0;
 		padding-bottom: 1rem;
@@ -65,6 +65,8 @@
 		margin: 0;
 		font-size: 1.8rem;
 		color: #2c3e50;
+		flex: 1;
+		text-align: center;
 	}
 
 	.btn-reset {
@@ -76,6 +78,7 @@
 		cursor: pointer;
 		font-size: 0.9rem;
 		transition: background-color 0.2s;
+		flex-shrink: 0;
 	}
 
 	.btn-reset:hover {
