@@ -1,0 +1,30 @@
+name: purchase-system
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Containerfile
+    container_name: purchase-backend
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./backup:/app/backup
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - TZ=Asia/Tokyo
+    expose:
+      - "8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Containerfile
+    container_name: purchase-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - TZ=Asia/Tokyo
