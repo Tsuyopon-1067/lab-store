@@ -436,7 +436,7 @@
 	.empty-notice {
 		text-align: center;
 		padding: 2rem;
-		color: #eee;
+		color: #2c3e50;
 		font-size: 1rem;
 	}
 

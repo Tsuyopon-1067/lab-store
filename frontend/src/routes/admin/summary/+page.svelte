@@ -209,7 +209,7 @@
 
 	.date-input label {
 		font-weight: 500;
-		color: #eee;
+		color: #333;
 		font-size: 0.9rem;
 	}
 
@@ -328,7 +328,7 @@
 	}
 
 	.amount-cell {
-		color: #eee;
+		color: #2c3e50;
 	}
 
 	.amount-cell.unpaid {
