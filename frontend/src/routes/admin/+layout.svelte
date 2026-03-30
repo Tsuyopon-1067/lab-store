@@ -16,25 +16,27 @@
 </script>
 
 <div class="admin-layout">
-    <aside class="admin-sidebar">
-        <nav class="admin-menu">
-            <h3>管理メニュー</h3>
-            <ul>
-                <li><a href="/admin">ダッシュボード</a></li>
-                <li><a href="/admin/users">利用者管理</a></li>
-                <li><a href="/admin/products">商品管理</a></li>
-                <li><a href="/admin/purchases">購入履歴</a></li>
-                <li><a href="/admin/restocks">仕入れ履歴</a></li>
-                <li><a href="/admin/payments">支払い管理</a></li>
-                <li><a href="/admin/restock-payments">立替精算</a></li>
-                <li><a href="/admin/summary">月次精算</a></li>
-                <li><a href="/admin/backup">バックアップ</a></li>
-                <li><a href="/admin/settings">設定</a></li>
-            </ul>
-        </nav>
-    </aside>
+    {#if $auth.isLoggedIn}
+        <aside class="admin-sidebar">
+            <nav class="admin-menu">
+                <h3>管理メニュー</h3>
+                <ul>
+                    <li><a href="/admin">ダッシュボード</a></li>
+                    <li><a href="/admin/users">利用者管理</a></li>
+                    <li><a href="/admin/products">商品管理</a></li>
+                    <li><a href="/admin/purchases">購入履歴</a></li>
+                    <li><a href="/admin/restocks">仕入れ履歴</a></li>
+                    <li><a href="/admin/payments">支払い管理</a></li>
+                    <li><a href="/admin/restock-payments">立替精算</a></li>
+                    <li><a href="/admin/summary">月次精算</a></li>
+                    <li><a href="/admin/backup">バックアップ</a></li>
+                    <li><a href="/admin/settings">設定</a></li>
+                </ul>
+            </nav>
+        </aside>
+    {/if}
 
-    <div class="admin-content">
+    <div class="admin-content" class:full-width={!$auth.isLoggedIn}>
         {@render children()}
     </div>
 </div>
@@ -87,6 +89,13 @@
         padding: 2rem;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         overflow-y: auto;
+    }
+
+    .admin-content.full-width {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     @media (max-width: 768px) {
