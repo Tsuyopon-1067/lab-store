@@ -10,10 +10,12 @@
 	// 状態管理
 	let pageState: PageState = $state('idle');
 	let currentUser: UserBalance | null = $state(null);
+	let currentUserBarcode: string = $state('');
 	let restockItems: RestockItem[] = $state([]);
 	let response: RestockResponse | null = $state(null);
 	let errorMessage = $state('');
 	let isLoading = $state(false);
+	let restockNote = $state('');
 
 	// モーダル状態
 	let showModal = $state(false);
@@ -35,9 +37,11 @@
 	function resetRestockSession() {
 		pageState = 'idle';
 		currentUser = null;
+		currentUserBarcode = '';
 		restockItems = [];
 		response = null;
 		errorMessage = '';
+		restockNote = '';
 		showModal = false;
 		modalProduct = null;
 		if (timeoutId) clearTimeout(timeoutId);
@@ -61,6 +65,7 @@
 		try {
 			const balance = await apiCallWithBarcode<UserBalance>('/me/balance', barcode);
 			currentUser = balance;
+			currentUserBarcode = barcode;
 			pageState = 'registering';
 			resetTimeout();
 		} catch (err) {
@@ -133,15 +138,18 @@
 	}
 
 	async function confirmRestock() {
-		if (!currentUser || restockItems.length === 0) return;
+		if (!currentUser || !currentUserBarcode || restockItems.length === 0) return;
 
 		isLoading = true;
 		errorMessage = '';
 
 		try {
-			const request: RestockRequest = {
-				user_id: currentUser.user_id,
-				restocked_at: new Date().toISOString(),
+			const totalAmount = restockItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+			const request = {
+				user_barcode: currentUserBarcode,
+				total_amount: totalAmount,
+				note: restockNote,
 				items: restockItems.map((item) => ({
 					product_id: item.product_id,
 					quantity: item.quantity,
@@ -276,6 +284,16 @@
 									<span class="total-amount">
 										¥{restockItems.reduce((sum, item) => sum + item.subtotal, 0).toLocaleString('ja-JP')}
 									</span>
+								</div>
+
+								<div class="form-group">
+									<label for="note">メモ（領収書の内容など）</label>
+									<textarea
+										id="note"
+										bind:value={restockNote}
+										placeholder="仕入れの詳細（例：○○店での購入）"
+										class="form-textarea"
+									></textarea>
 								</div>
 
 								<button
@@ -562,6 +580,35 @@
 		color: #0066cc;
 	}
 
+	.form-group {
+		margin-bottom: 1.5rem;
+	}
+
+	.form-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+		color: #2c3e50;
+	}
+
+	.form-textarea {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		font-size: 0.9rem;
+		font-family: inherit;
+		box-sizing: border-box;
+		resize: vertical;
+		min-height: 60px;
+	}
+
+	.form-textarea:focus {
+		outline: none;
+		border-color: #0066cc;
+		box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
+	}
+
 	.btn-confirm {
 		width: 100%;
 		padding: 1rem;
@@ -666,17 +713,6 @@
 
 	.modal h3 {
 		margin: 0 0 1.5rem 0;
-		color: #2c3e50;
-	}
-
-	.form-group {
-		margin-bottom: 1.5rem;
-	}
-
-	.form-group label {
-		display: block;
-		margin-bottom: 0.5rem;
-		font-weight: 600;
 		color: #2c3e50;
 	}
 
