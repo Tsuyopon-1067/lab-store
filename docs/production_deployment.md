@@ -356,17 +356,24 @@ curl http://localhost:3000/health
 # http://localhost:3000/admin にアクセス
 ```
 
-### 自動バックアップの設定
+### 自動バックアップ（毎日 0 時実行）
 
-`config.yaml` で自動バックアップ間隔を設定（オプション）：
+サーバーは起動時に自動でバックアップスケジューラーを開始します。毎日 00:00（ローカル時刻）に自動的にバックアップを実行します。
+
+**動作:**
+- 起動ログに "daily backup scheduler: next run at YYYY-MM-DD HH:MM:SS" が表示される
+- 毎日 0 時に自動実行
+- 実行結果は `auto backup created: backup-YYYY-MM-DD_HH-MM-SS.db` または `auto backup failed: ...` としてログに記録される
+
+**設定:**
+
+`config.yaml` で設定できます（参考）：
 
 ```yaml
 backup:
   path: ../backup
-  interval_minutes: 60  # 60分ごと（0で無効化）
+  interval_minutes: 60  # 現在未使用（スケジューラーは毎日 0 時固定）
 ```
-
-> 注: 現在の実装では自動バックアップ実行スケジューラーは未実装。定期バックアップが必要な場合は、外部の cron ジョブで `/api/backup` エンドポイント（POST）を呼び出してください。
 
 ---
 
