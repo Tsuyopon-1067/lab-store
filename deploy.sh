@@ -114,6 +114,94 @@ setup_admin() {
     log_info "初期化完了 ✓"
 }
 
+# SSL/TLS 証明書セットアップ
+setup_ssl() {
+    log_info "SSL/TLS 証明書をセットアップ中..."
+
+    # 前提条件チェック
+    if ! command -v certbot &> /dev/null; then
+        log_error "certbot がインストールされていません"
+        log_info "以下のコマンドでインストールしてください:"
+        echo "  sudo apt-get install -y certbot python3-certbot-nginx"
+        exit 1
+    fi
+
+    # config.yaml から情報を取得
+    if [ ! -f config.yaml ]; then
+        log_error "config.yaml が見つかりません"
+        exit 1
+    fi
+
+    # ドメイン名をユーザーに入力させる
+    read -p "ドメイン名を入力してください (例: example.com): " DOMAIN
+    read -p "Let's Encrypt登録用メールアドレスを入力してください: " EMAIL
+
+    if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
+        log_error "ドメイン名とメールアドレスが必須です"
+        exit 1
+    fi
+
+    # certbot ディレクトリを作成
+    mkdir -p certbot
+
+    log_info "Let's Encrypt から証明書を取得中 (domain: $DOMAIN)..."
+
+    # webroot モードで証明書を取得
+    sudo certbot certonly \
+        --webroot \
+        -w ./certbot \
+        -d "$DOMAIN" \
+        --email "$EMAIL" \
+        --agree-tos \
+        --non-interactive \
+        --expand
+
+    if [ $? -eq 0 ]; then
+        log_info "証明書取得成功 ✓"
+
+        # シンボリックリンクを作成（nginx が参照する場所）
+        sudo mkdir -p /etc/letsencrypt/live/default
+        sudo ln -sf "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" /etc/letsencrypt/live/default/fullchain.pem
+        sudo ln -sf "/etc/letsencrypt/live/$DOMAIN/privkey.pem" /etc/letsencrypt/live/default/privkey.pem
+
+        # パーミッション設定
+        sudo chmod -R 755 /etc/letsencrypt/live
+        sudo chmod -R 755 /etc/letsencrypt/archive
+
+        log_info "config.yaml を更新してください:"
+        echo "  https.enabled: true"
+        echo "  https.domain: $DOMAIN"
+        echo "  https.email: $EMAIL"
+
+        log_info "その後 './deploy.sh up' で再起動してください"
+    else
+        log_error "証明書取得に失敗しました"
+        exit 1
+    fi
+}
+
+# SSL/TLS 証明書更新テスト
+renew_ssl() {
+    log_info "SSL/TLS 証明書の更新テストを実行中..."
+
+    if ! command -v certbot &> /dev/null; then
+        log_error "certbot がインストールされていません"
+        exit 1
+    fi
+
+    sudo certbot renew --webroot -w ./certbot --dry-run
+
+    if [ $? -eq 0 ]; then
+        log_info "更新テスト成功 ✓"
+        log_info "以下のコマンドで定期更新を設定してください:"
+        echo "  sudo systemctl enable certbot.timer"
+        echo "  sudo systemctl start certbot.timer"
+    else
+        log_error "更新テストに失敗しました"
+        exit 1
+    fi
+}
+
 # ヘルスチェック
 health_check() {
     log_info "ヘルスチェック実施中..."
@@ -164,6 +252,12 @@ case $COMPOSE_CMD in
     setup)
         setup_admin
         ;;
+    setup-ssl)
+        setup_ssl
+        ;;
+    renew-ssl)
+        renew_ssl
+        ;;
     health)
         health_check
         ;;
@@ -179,15 +273,17 @@ case $COMPOSE_CMD in
   ./deploy.sh [コマンド]
 
 コマンド:
-  up       コンテナをビルド・起動（初回推奨）
-  build    コンテナのみビルド
-  down     コンテナを停止・削除
-  restart  コンテナを再起動
-  logs     ログを表示（リアルタイム）
-  setup    管理者パスワード初期化
-  health   ヘルスチェック実施
-  ps       コンテナ一覧表示
-  help     このヘルプを表示
+  up           コンテナをビルド・起動（初回推奨）
+  build        コンテナのみビルド
+  down         コンテナを停止・削除
+  restart      コンテナを再起動
+  logs         ログを表示（リアルタイム）
+  setup        管理者パスワード初期化
+  setup-ssl    SSL/TLS証明書をセットアップ（Let's Encrypt）
+  renew-ssl    SSL/TLS証明書の更新テスト
+  health       ヘルスチェック実施
+  ps           コンテナ一覧表示
+  help         このヘルプを表示
 
 例:
   ./deploy.sh up       # 初回セットアップ・起動

@@ -141,13 +141,13 @@ sudo journalctl -u purchase-system -f
 
 ## 6. ファイアウォール設定
 
-ブラウザからアクセスするには、ファイアウォールでポート 3000 を開く必要があります。
+ブラウザからアクセスするには、ファイアウォールでポート 3000 と 443 (HTTPS) を開く必要があります。
 
 ### UFW（Ubuntu/Debian）
 
 ```bash
 sudo ufw allow 3000/tcp
-sudo ufw allow 3000/udp
+sudo ufw allow 443/tcp
 sudo ufw reload
 ```
 
@@ -155,45 +155,128 @@ sudo ufw reload
 
 ```bash
 sudo firewall-cmd --permanent --add-port=3000/tcp
-sudo firewall-cmd --permanent --add-port=3000/udp
+sudo firewall-cmd --permanent --add-port=443/tcp
 sudo firewall-cmd --reload
-```
-
-### nginx をリバースプロキシとして使う場合
-
-ポート 3000 を直接公開する代わりに、nginx でリバースプロキシを設定することもできます。
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.example.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
 ```
 
 ---
 
 ## 7. SSL/TLS 設定（本番必須）
 
-Let's Encrypt を使ったSSL設定例。
+### 概要
+
+本システムのコンテナ内の nginx は HTTPS で通信します。Let's Encrypt の無料証明書を使用します。
+
+**構成:**
+```
+ブラウザ → https://example.com:443 → nginx (HTTPS)
+                                     ↓
+                                   backend:8080 (HTTP内部)
+```
+
+### 7.1 certbot のインストール
 
 ```bash
-# certbot をインストール
-sudo apt-get install -y certbot python3-certbot-nginx
+# Ubuntu/Debian
+sudo apt-get install -y certbot
 
-# 証明書を取得
-sudo certbot certonly --standalone -d your-domain.example.com
+# CentOS/RHEL
+sudo dnf install -y certbot
+```
 
-# nginx 設定を更新（HTTPSをリッスン）
-# /etc/nginx/sites-available/your-domain を編集
+### 7.2 deploy.sh でワンコマンドセットアップ
+
+```bash
+# SSL/TLSをセットアップ（推奨）
+./deploy.sh setup-ssl
+```
+
+以下を入力します：
+- ドメイン名（例: `api.example.com`）
+- Let's Encrypt登録用メールアドレス
+
+スクリプトが自動で以下を実行します：
+1. ✅ certbot で証明書を取得
+2. ✅ /etc/letsencrypt にマウント
+3. ✅ nginx が参照できるシンボリックリンクを作成
+
+### 7.3 config.yaml を更新
+
+セットアップ後、`config.yaml` を編集して HTTPS を有効化：
+
+```yaml
+https:
+  enabled: true
+  domain: "api.example.com"
+  email: "admin@example.com"
+```
+
+### 7.4 コンテナを再起動
+
+```bash
+./deploy.sh restart
+```
+
+### 7.5 HTTPS でアクセス確認
+
+```bash
+curl https://api.example.com/
+# または
+curl --insecure https://localhost:443/
+```
+
+ブラウザで `https://api.example.com` を開いて、🔒 マークが表示されることを確認してください。
+
+### 7.6 証明書の自動更新設定
+
+Let's Encrypt 証明書は **90日で期限切れ**になるため、自動更新が必須です。
+
+```bash
+# 更新テストを実施
+./deploy.sh renew-ssl
+
+# systemd タイマーで自動更新を有効化
+sudo systemctl enable certbot.timer
+sudo systemctl start certbot.timer
+
+# 自動更新の状態確認
+sudo systemctl status certbot.timer
+sudo systemctl list-timers --all | grep certbot
+```
+
+certbot は **毎日** 証明書を確認し、30日以内に期限切れの場合は自動的に更新します。
+
+### 7.7 トラブルシューティング
+
+**証明書取得に失敗した場合:**
+
+```bash
+# ファイアウォールでポート 80 が開いているか確認
+sudo ufw allow 80/tcp
+sudo ufw reload
+
+# または certbot を手動実行
+sudo certbot certonly --standalone -d api.example.com
+```
+
+**nginx で証明書が見つからないエラー:**
+
+```bash
+# パーミッション確認
+sudo ls -la /etc/letsencrypt/live/
+
+# nginx コンテナを再起動
+./deploy.sh restart frontend
+```
+
+**期限切れ近い証明書:**
+
+```bash
+# 証明書一覧と有効期限を確認
+sudo certbot certificates
+
+# 手動更新
+sudo certbot renew --force-renewal
 ```
 
 ---
@@ -231,6 +314,16 @@ podman-compose restart backend
 ---
 
 ## 9. よく使うコマンド
+
+| コマンド | 説明 |
+|---------|------|
+| `./deploy.sh up` | コンテナビルド・起動 |
+| `./deploy.sh setup-ssl` | SSL/TLS証明書セットアップ |
+| `./deploy.sh logs` | ログ表示 |
+| `./deploy.sh restart` | コンテナ再起動 |
+| `./deploy.sh down` | コンテナ停止 |
+
+### 詳細なコマンド例
 
 ```bash
 # ログ確認（全コンテナ）
@@ -344,11 +437,38 @@ podman-compose logs -f
 ### 開発環境
 - session.timeout_minutes: 120（デバッグに十分な時間）
 - backup.interval_minutes: 0（自動バックアップ無効）
+- https.enabled: false
 
 ### 本番環境
 - session.timeout_minutes: 30（セキュリティ）
 - backup.interval_minutes: 60（1時間ごとにバックアップ）
+- https.enabled: true
 
-### 高負荷環境
-- backup.interval_minutes: 1440（1日1回）
-- SQLite WAL チェックポイント調整（db.go 参照）
+### 自動バックアップ
+
+コンテナ内部で `db/backups.go` で実装されているバックアップ機能が動作しています。
+
+### 手動バックアップ
+
+```bash
+# バックアップディレクトリを確認
+ls -la ./backup/
+
+# 手動でバックアップを取得
+podman-compose exec backend sqlite3 /app/data/purchase.db \
+  ".backup /app/backup/manual_$(date +%Y%m%d_%H%M%S).sqlite"
+
+# バックアップを外部に転送
+scp -r ./backup/ backup-server:/backups/purchase-system/
+```
+
+### データベースのリストア
+
+```bash
+# バックアップファイルをコンテナ環境にコピー
+cp /path/to/backup.sqlite ./data/purchase.db
+
+# コンテナを再起動
+podman-compose restart backend
+```
+

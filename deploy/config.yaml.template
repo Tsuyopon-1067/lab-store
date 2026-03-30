@@ -10,3 +10,9 @@ session:
 backup:
   path: backup
   interval_minutes: 60
+
+# HTTPS/SSL設定
+https:
+  enabled: false                    # true で HTTPS 有効化
+  domain: "example.com"             # ドメイン名（Let's Encrypt 証明書用）
+  email: "admin@example.com"        # Let's Encrypt 登録メール
