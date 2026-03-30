@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { apiCallWithAuth } from '$lib/api';
+	import BarcodeInput from '$lib/components/BarcodeInput.svelte';
 	import type { AdminUser } from '$lib/types';
 
 	let users: AdminUser[] = $state([]);
@@ -124,7 +125,15 @@
 	function formatDate(dateString: string): string {
 		return new Date(dateString).toLocaleString('ja-JP');
 	}
+
+	function handleScan(event: CustomEvent<{ barcode: string }>) {
+		if (showModal && modalMode === 'add') {
+			modalBarcode = event.detail.barcode;
+		}
+	}
 </script>
+
+<svelte:window on:scan={handleScan} />
 
 <div class="users-page">
 	<div class="page-header">
@@ -217,15 +226,11 @@
 
 			{#if modalMode === 'add'}
 				<div class="form-group">
-					<label for="barcode">バーコード</label>
-					<input
-						type="text"
-						id="barcode"
-						bind:value={modalBarcode}
-						placeholder="4912345678901"
-						required
-						disabled={isLoading}
-					/>
+					<label>バーコード</label>
+					<BarcodeInput />
+					{#if modalBarcode}
+						<p class="scanned-value">スキャン済み: <strong>{modalBarcode}</strong></p>
+					{/if}
 				</div>
 			{/if}
 
@@ -550,6 +555,16 @@
 	input:disabled {
 		background-color: #f5f5f5;
 		cursor: not-allowed;
+	}
+
+	.scanned-value {
+		margin: 0.75rem 0 0 0;
+		padding: 0.75rem;
+		background-color: #e8f5e9;
+		border-left: 3px solid #4caf50;
+		color: #2e7d32;
+		border-radius: 4px;
+		font-size: 0.95rem;
 	}
 
 	.modal-footer {
