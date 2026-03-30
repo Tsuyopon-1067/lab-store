@@ -20,7 +20,7 @@
 	h1 {
 		margin: 0 0 2rem 0;
 		font-size: 1.8rem;
-		color: #2c3e50;
+		color: #fff;
 	}
 
 	.placeholder-card {

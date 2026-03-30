@@ -152,7 +152,7 @@
 	h1 {
 		margin: 0 0 2rem 0;
 		font-size: 1.8rem;
-		color: #2c3e50;
+		color: #fff;
 	}
 
 	.alert {
@@ -184,7 +184,7 @@
 
 	label {
 		font-weight: 500;
-		color: #333;
+		color: #eee;
 	}
 
 	select {
@@ -210,7 +210,7 @@
 	.empty-notice {
 		text-align: center;
 		padding: 2rem;
-		color: #666;
+		color: #eee;
 		font-size: 1rem;
 	}
 
@@ -268,7 +268,7 @@
 
 	.btn-secondary {
 		background-color: #f0f0f0;
-		color: #333;
+		color: #eee;
 		border: 1px solid #ddd;
 	}
 
@@ -283,7 +283,7 @@
 
 	.page-info {
 		font-weight: 500;
-		color: #333;
+		color: #eee;
 	}
 
 	@media (max-width: 768px) {

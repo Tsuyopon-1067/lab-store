@@ -70,6 +70,7 @@
 	h1 {
 		margin-bottom: 2rem;
 		font-size: 2rem;
+		color: #fff;
 	}
 
 	.dashboard-grid {

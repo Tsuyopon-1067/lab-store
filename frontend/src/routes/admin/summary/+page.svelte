@@ -163,7 +163,7 @@
 	h1 {
 		margin: 0 0 2rem 0;
 		font-size: 1.8rem;
-		color: #2c3e50;
+		color: #fff;
 	}
 
 	.alert {
@@ -209,7 +209,7 @@
 
 	.date-input label {
 		font-weight: 500;
-		color: #333;
+		color: #eee;
 		font-size: 0.9rem;
 	}
 
@@ -265,7 +265,7 @@
 	.empty-notice {
 		text-align: center;
 		padding: 2rem;
-		color: #666;
+		color: #eee;
 		font-size: 1rem;
 	}
 
@@ -328,7 +328,7 @@
 	}
 
 	.amount-cell {
-		color: #333;
+		color: #eee;
 	}
 
 	.amount-cell.unpaid {
