@@ -54,3 +54,47 @@ export interface PurchaseResponse {
 	purchased_at: string;
 	updated_balance: UserBalance;
 }
+
+export interface RestockItem {
+	product_id: number;
+	product_name: string;
+	quantity: number;
+	unit_price: number;
+	subtotal: number;
+}
+
+export interface RestockRequest {
+	user_id: number;
+	restocked_at: string;
+	note?: string;
+	items: Array<{
+		product_id: number;
+		quantity: number;
+		unit_price: number;
+	}>;
+}
+
+export interface RestockResponse {
+	id: number;
+	user_id: number;
+	user_name: string;
+	total_amount: number;
+	items: RestockItem[];
+	restocked_at: string;
+	note?: string;
+}
+
+export interface PurchaseHistory {
+	id: number;
+	purchased_at: string;
+	total_amount: number;
+	items: CartItem[];
+}
+
+export interface RestockHistory {
+	id: number;
+	total_amount: number;
+	restocked_at: string;
+	note?: string;
+	items: RestockItem[];
+}
