@@ -48,7 +48,37 @@ nano config.yaml
 http://localhost:3000
 ```
 
-完了です！🎉
+**開発環境の場合はここで完了です！** 🎉
+
+### ステップ 5（本番環境）: SSL/TLS 証明書セットアップ
+
+ドメイン名がある場合、HTTPS を有効化できます：
+
+```bash
+# SSL/TLS セットアップ（Let's Encrypt 無料証明書）
+./deploy.sh setup-ssl
+```
+
+以下を入力：
+- ドメイン名（例: `api.example.com`）
+- メールアドレス
+
+その後 `config.yaml` を編集：
+
+```yaml
+https:
+  enabled: true
+  domain: "api.example.com"
+  email: "admin@example.com"
+```
+
+コンテナを再起動：
+
+```bash
+./deploy.sh restart
+```
+
+`https://api.example.com` で HTTPS アクセス確認 🔒
 
 ---
 
