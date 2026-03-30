@@ -18,7 +18,7 @@
         barcode: string;
     }
 
-    let input = $state("");
+    let { input = $bindable("") } = $props();
     let inputRef: HTMLInputElement | undefined;
     let videoRef = $state<HTMLVideoElement | undefined>(undefined);
     let cameraError = $state("");
