@@ -179,11 +179,13 @@
         showPriceHistoryModal = false;
     }
 
-    function formatDate(dateString: string): string {
+    function formatDate(dateString: string | null | undefined): string {
+        if (!dateString) return "—";
         return new Date(dateString).toLocaleString("ja-JP");
     }
 
-    function formatCurrency(amount: number): string {
+    function formatCurrency(amount: number | null | undefined): string {
+        if (amount == null) return "—";
         return `¥${amount.toLocaleString("ja-JP")}`;
     }
 </script>
