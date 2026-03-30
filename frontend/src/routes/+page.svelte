@@ -96,6 +96,11 @@
 
 	// カートに商品を追加
 	function addProductToCart(product: Product) {
+		if (!product || product.current_price == null) {
+			errorMessage = '商品データが不正です。管理画面から商品を確認してください';
+			return;
+		}
+
 		const existingItem = cart.find((item) => item.product_id === product.id);
 
 		if (existingItem) {
@@ -220,6 +225,10 @@
 
 				<div class="purchase-section">
 					<div class="left-panel">
+						<div class="barcode-scan-section">
+							<BarcodeInput label="商品をスキャンしてください" />
+						</div>
+
 						<ProductSearch
 							onProductAdd={addProductToCart}
 							onError={(msg) => {

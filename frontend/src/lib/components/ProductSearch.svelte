@@ -26,7 +26,8 @@
 			const products = await apiCall<Product[]>(
 				`/products/search?q=${encodeURIComponent(searchQuery)}`,
 			);
-			searchResults = products;
+			// null/undefined データをフィルタリング
+			searchResults = (products ?? []).filter((p) => p && p.id && p.name);
 			showResults = true;
 		} catch (err) {
 			onError(err instanceof Error ? err.message : '検索に失敗しました');
@@ -37,6 +38,10 @@
 	}
 
 	function handleProductSelect(product: Product) {
+		if (!product || !product.id || !product.name) {
+			onError('不正な商品データです');
+			return;
+		}
 		onProductAdd(product);
 		searchQuery = '';
 		searchResults = [];
@@ -65,19 +70,21 @@
 				<div class="results-header">
 					<span class="hit-count">{searchResults.length}件がヒットしました</span>
 				</div>
-				{#each searchResults as product (product.id)}
-					<div class="result-item">
-						<div class="product-info">
-							<div class="result-name">{product.name}</div>
-							<div class="result-price">¥{product.current_price.toLocaleString('ja-JP')}</div>
+				{#each searchResults as product (product?.id)}
+					{#if product && product.id && product.name}
+						<div class="result-item">
+							<div class="product-info">
+								<div class="result-name">{product.name}</div>
+								<div class="result-price">¥{(product.current_price ?? 0).toLocaleString('ja-JP')}</div>
+							</div>
+							<button
+								onclick={() => handleProductSelect(product)}
+								class="btn-add-to-cart"
+							>
+								カートに追加
+							</button>
 						</div>
-						<button
-							onclick={() => handleProductSelect(product)}
-							class="btn-add-to-cart"
-						>
-							カートに追加
-						</button>
-					</div>
+					{/if}
 				{/each}
 			</div>
 		{:else if searchQuery}

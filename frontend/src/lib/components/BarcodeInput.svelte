@@ -18,7 +18,7 @@
         barcode: string;
     }
 
-    let { input = $bindable("") } = $props();
+    let { input = $bindable(""), label = "バーコードをスキャンしてください" } = $props();
     let inputRef: HTMLInputElement | undefined;
     let videoRef = $state<HTMLVideoElement | undefined>(undefined);
     let cameraError = $state("");
@@ -137,7 +137,7 @@
     >
         <video bind:this={videoRef} class="camera-preview" playsinline></video>
         <div class="camera-label">
-            🎥 カメラでバーコードをスキャンしてください
+            🎥 カメラで{label}
         </div>
     </div>
 
@@ -151,7 +151,7 @@
         bind:this={inputRef}
         bind:value={input}
         type="text"
-        placeholder="バーコードをスキャンしてください"
+        placeholder={label}
         onkeydown={handleKeyDown}
         aria-label="バーコードスキャン入力"
         class="barcode-input"
