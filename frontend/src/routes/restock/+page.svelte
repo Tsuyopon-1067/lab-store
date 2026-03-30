@@ -242,8 +242,11 @@
 													<input
 														type="number"
 														min="1"
-														value={item.quantity}
-														on:change={(e) => updateItemQuantity(item.product_id, parseInt(e.currentTarget.value))}
+														bind:value={item.quantity}
+														onchange={() => {
+															item.subtotal = item.quantity * item.unit_price;
+															restockItems = restockItems;
+														}}
 														class="qty-input"
 													/>
 												</td>
