@@ -114,6 +114,10 @@ func main() {
 		admin.POST("/api-keys", handler.CreateAPIKey(database))
 		admin.GET("/api-keys", handler.ListAPIKeys(database))
 		admin.DELETE("/api-keys/:id", handler.DeleteAPIKey(database))
+
+		// バックアップ
+		admin.POST("/backup", handler.CreateBackup(database, cfg))
+		admin.GET("/backup/list", handler.ListBackups(database, cfg))
 	}
 
 	// ヘルスチェック
