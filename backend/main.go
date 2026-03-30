@@ -10,6 +10,7 @@ import (
 	"purchase-system/db"
 	"purchase-system/handler"
 	"purchase-system/middleware"
+	"purchase-system/service"
 )
 
 func main() {
@@ -114,12 +115,19 @@ func main() {
 		admin.POST("/api-keys", handler.CreateAPIKey(database))
 		admin.GET("/api-keys", handler.ListAPIKeys(database))
 		admin.DELETE("/api-keys/:id", handler.DeleteAPIKey(database))
+
+		// バックアップ
+		admin.POST("/backup", handler.CreateBackup(database, cfg))
+		admin.GET("/backup/list", handler.ListBackups(database, cfg))
 	}
 
 	// ヘルスチェック
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+
+	// 定期バックアップスケジューラー起動
+	service.StartDailyBackupScheduler(database, cfg)
 
 	// サーバー起動
 	port := fmt.Sprintf(":%d", cfg.Server.Port)

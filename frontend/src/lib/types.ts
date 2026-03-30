@@ -195,3 +195,9 @@ export interface SummaryReport {
 	period: { from: string; to: string };
 	users: SummaryUser[];
 }
+
+export interface Backup {
+	id: number;
+	filename: string;
+	created_at: string;
+}
