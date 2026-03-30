@@ -13,7 +13,7 @@ import (
 
 func main() {
 	// DB初期化
-	database, err := db.Init("../../data/purchase.db")
+	database, err := db.Init("../data/purchase.db")
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
