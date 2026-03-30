@@ -332,8 +332,8 @@
 
 	<!-- 数量・単価入力モーダル -->
 	{#if showModal && modalProduct}
-		<div class="modal-overlay" on:click={() => (showModal = false)}>
-			<div class="modal" on:click={(e) => e.stopPropagation()}>
+		<div class="modal-overlay" onclick={() => (showModal = false)}>
+			<div class="modal" onclick={(e) => e.stopPropagation()}>
 				<h3>{modalProduct.name}</h3>
 
 				<div class="form-group">
