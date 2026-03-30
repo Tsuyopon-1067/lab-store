@@ -4,9 +4,14 @@
 
 ## ドキュメント
 
+### 開発・設計
 - [要件定義書](docs/requirements.md)
 - [ディレクトリ構成・DB設計](docs/directory_and_db_design.md)
 - [コンテナ設計](docs/container_design.md)
+
+### 本番環境
+- [本番環境デプロイメントガイド](docs/production_deployment.md)
+- [デプロイチェックリスト](docs/production_checklist.md)
 
 ## 技術スタック
 
