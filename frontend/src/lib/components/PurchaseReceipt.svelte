@@ -87,7 +87,7 @@
 		</div>
 
 		<button onclick={onClose} class="btn-close">
-			次の購買へ
+			最初の画面に戻る
 		</button>
 	</div>
 </div>

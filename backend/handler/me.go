@@ -47,8 +47,8 @@ func GetMyPurchases(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 購入明細を取得
-		var details []*model.PurchaseDetail
+		// 購入履歴を取得
+		var histories []*model.PurchaseHistory
 		productRepo := repository.NewProductRepository(db)
 		for _, purchase := range purchases {
 			items, err := purchaseRepo.GetItemsByPurchaseID(purchase.ID)
@@ -64,21 +64,24 @@ func GetMyPurchases(db *sql.DB) gin.HandlerFunc {
 				subtotal := item.Quantity * item.UnitPrice
 				totalAmount += subtotal
 				itemDetails = append(itemDetails, &model.PurchaseItemDetail{
-					Item:        item,
+					ID:          item.ID,
+					ProductID:   item.ProductID,
+					Quantity:    item.Quantity,
+					UnitPrice:   item.UnitPrice,
 					ProductName: product.Name,
-					ProductID:   product.ID,
 					Subtotal:    subtotal,
 				})
 			}
 
-			details = append(details, &model.PurchaseDetail{
-				Purchase:    purchase,
-				Items:       itemDetails,
+			histories = append(histories, &model.PurchaseHistory{
+				ID:          purchase.ID,
+				PurchasedAt: purchase.PurchasedAt,
 				TotalAmount: totalAmount,
+				Items:       itemDetails,
 			})
 		}
 
-		c.JSON(http.StatusOK, details)
+		c.JSON(http.StatusOK, histories)
 	}
 }
 
@@ -91,39 +94,45 @@ func GetMyRestocks(db *sql.DB) gin.HandlerFunc {
 		}
 
 		currentUser := user.(*model.User)
-
-		rows, err := db.Query(`
-			SELECT id, user_id, total_amount, restocked_at, note
-			FROM restocks
-			WHERE user_id = ? AND deleted_at IS NULL
-			ORDER BY restocked_at DESC
-		`, currentUser.ID)
+		restockRepo := repository.NewRestockRepository(db)
+		restocks, err := restockRepo.GetByUserID(currentUser.ID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 			return
 		}
-		defer rows.Close()
 
-		var restocks []map[string]interface{}
-		for rows.Next() {
-			var id, userID, totalAmount int
-			var note sql.NullString
-			var restockedAt interface{}
-
-			if err := rows.Scan(&id, &userID, &totalAmount, &restockedAt, &note); err != nil {
+		// 仕入れ履歴を取得
+		var histories []*model.RestockHistory
+		productRepo := repository.NewProductRepository(db)
+		for _, restock := range restocks {
+			items, err := restockRepo.GetItemsByRestockID(restock.ID)
+			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 				return
 			}
 
-			restocks = append(restocks, map[string]interface{}{
-				"id":             id,
-				"user_id":        userID,
-				"total_amount":   totalAmount,
-				"restocked_at":   restockedAt,
-				"note":           note.String,
+			var itemDetails []*model.RestockItemDetail
+			for _, item := range items {
+				product, _ := productRepo.GetByID(item.ProductID)
+				itemDetails = append(itemDetails, &model.RestockItemDetail{
+					ID:          item.ID,
+					ProductID:   item.ProductID,
+					Quantity:    item.Quantity,
+					UnitPrice:   item.UnitPrice,
+					ProductName: product.Name,
+					Subtotal:    item.Quantity * item.UnitPrice,
+				})
+			}
+
+			histories = append(histories, &model.RestockHistory{
+				ID:          restock.ID,
+				TotalAmount: restock.TotalAmount,
+				RestockedAt: restock.RestockedAt,
+				Note:        restock.Note,
+				Items:       itemDetails,
 			})
 		}
 
-		c.JSON(http.StatusOK, restocks)
+		c.JSON(http.StatusOK, histories)
 	}
 }

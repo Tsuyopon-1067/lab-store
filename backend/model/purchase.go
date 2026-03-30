@@ -22,11 +22,20 @@ type PurchaseDetail struct {
 	TotalAmount   int
 }
 
+type PurchaseHistory struct {
+	ID          int                    `json:"id"`
+	PurchasedAt time.Time              `json:"purchased_at"`
+	TotalAmount int                    `json:"total_amount"`
+	Items       []*PurchaseItemDetail  `json:"items"`
+}
+
 type PurchaseItemDetail struct {
-	Item        *PurchaseItem
-	ProductName string
-	ProductID   int
-	Subtotal    int
+	ID          int    `json:"id"`
+	ProductID   int    `json:"product_id"`
+	Quantity    int    `json:"quantity"`
+	UnitPrice   int    `json:"unit_price"`
+	Subtotal    int    `json:"subtotal"`
+	ProductName string `json:"product_name"`
 }
 
 type BalanceSummary struct {
@@ -46,11 +55,11 @@ type CreatePurchaseRequest struct {
 }
 
 type PurchaseResponse struct {
-	PurchaseID  int                  `json:"purchase_id"`
-	UserID      int                  `json:"user_id"`
-	UserName    string               `json:"user_name"`
-	Items       []*PurchaseItemDetail `json:"items"`
-	TotalAmount int                  `json:"total_amount"`
-	PurchasedAt time.Time            `json:"purchased_at"`
-	NewBalance  int                  `json:"new_balance"`
+	PurchaseID     int                   `json:"purchase_id"`
+	UserID         int                   `json:"user_id"`
+	UserName       string                `json:"user_name"`
+	Items          []*PurchaseItemDetail `json:"items"`
+	TotalAmount    int                   `json:"total_amount"`
+	PurchasedAt    time.Time             `json:"purchased_at"`
+	UpdatedBalance *BalanceSummary       `json:"updated_balance"`
 }

@@ -102,9 +102,11 @@ func CreatePurchase(db *sql.DB) gin.HandlerFunc {
 		for _, item := range items {
 			product, _ := productRepo.GetByID(item.ProductID)
 			purchaseDetails = append(purchaseDetails, &model.PurchaseItemDetail{
-				Item:        item,
+				ID:          item.ID,
+				ProductID:   item.ProductID,
+				Quantity:    item.Quantity,
+				UnitPrice:   item.UnitPrice,
 				ProductName: product.Name,
-				ProductID:   product.ID,
 				Subtotal:    item.Quantity * item.UnitPrice,
 			})
 		}
@@ -116,7 +118,13 @@ func CreatePurchase(db *sql.DB) gin.HandlerFunc {
 			Items:       purchaseDetails,
 			TotalAmount: totalAmount,
 			PurchasedAt: purchase.PurchasedAt,
-			NewBalance:  balance.NetBalance,
+			UpdatedBalance: &model.BalanceSummary{
+				UserID:           user.ID,
+				UserName:         user.Name,
+				PurchaseUnpaid:   balance.PurchaseUnpaid,
+				RestockUnclaimed: balance.RestockUnclaimed,
+				NetBalance:       balance.NetBalance,
+			},
 		}
 
 		c.JSON(http.StatusCreated, response)

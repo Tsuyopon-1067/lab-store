@@ -27,11 +27,21 @@ type RestockDetail struct {
 	TotalAmount int
 }
 
+type RestockHistory struct {
+	ID          int                   `json:"id"`
+	TotalAmount int                   `json:"total_amount"`
+	RestockedAt time.Time             `json:"restocked_at"`
+	Note        *string               `json:"note"`
+	Items       []*RestockItemDetail  `json:"items"`
+}
+
 type RestockItemDetail struct {
-	Item        *RestockItem
-	ProductName string
-	ProductID   int
-	Subtotal    int
+	ID        int    `json:"id"`
+	ProductID int    `json:"product_id"`
+	Quantity  int    `json:"quantity"`
+	UnitPrice int    `json:"unit_price"`
+	Subtotal  int    `json:"subtotal"`
+	ProductName string `json:"product_name"`
 }
 
 type CreateRestockRequest struct {
@@ -40,6 +50,7 @@ type CreateRestockRequest struct {
 		ProductID int `json:"product_id" binding:"required"`
 		Quantity  int `json:"quantity" binding:"required,min=1"`
 		UnitPrice int `json:"unit_price" binding:"required"`
+		Subtotal  int `json:"subtotal"`
 	} `json:"items" binding:"required,min=1"`
 	TotalAmount int    `json:"total_amount" binding:"required"`
 	Note        string `json:"note"`
@@ -50,6 +61,7 @@ type UpdateRestockRequest struct {
 		ProductID int `json:"product_id" binding:"required"`
 		Quantity  int `json:"quantity" binding:"required,min=1"`
 		UnitPrice int `json:"unit_price" binding:"required"`
+		Subtotal  int `json:"subtotal"`
 	} `json:"items"`
 	TotalAmount int    `json:"total_amount" binding:"required"`
 	Note        string `json:"note"`

@@ -14,21 +14,6 @@
 	let searchResults: Product[] = $state([]);
 	let showResults = $state(false);
 
-	async function handleBarcodeSearch(barcode: string) {
-		isSearching = true;
-		try {
-			const product = await apiCall<Product>(`/products/barcode/${encodeURIComponent(barcode)}`);
-			onProductAdd(product);
-			searchQuery = '';
-			searchResults = [];
-			showResults = false;
-		} catch (err) {
-			onError(err instanceof Error ? err.message : '商品が見つかりません');
-		} finally {
-			isSearching = false;
-		}
-	}
-
 	async function handleSearch() {
 		if (!searchQuery.trim()) {
 			searchResults = [];
@@ -39,7 +24,7 @@
 		isSearching = true;
 		try {
 			const products = await apiCall<Product[]>(
-				`/products?search=${encodeURIComponent(searchQuery)}`,
+				`/products/search?q=${encodeURIComponent(searchQuery)}`,
 			);
 			searchResults = products;
 			showResults = true;
@@ -57,21 +42,6 @@
 		searchResults = [];
 		showResults = false;
 	}
-
-	// グローバルスキャンイベントをリッスン
-	$effect.pre(() => {
-		const handleScan = (e: Event) => {
-			const scanEvent = e as CustomEvent<{ barcode: string }>;
-			const barcode = scanEvent.detail.barcode;
-			handleBarcodeSearch(barcode);
-		};
-
-		window.addEventListener('scan', handleScan);
-
-		return () => {
-			window.removeEventListener('scan', handleScan);
-		};
-	});
 </script>
 
 <div class="product-search">
@@ -89,22 +59,32 @@
 		</button>
 	</div>
 
-	{#if showResults && searchResults.length > 0}
-		<div class="search-results">
-			{#each searchResults as product (product.id)}
-				<button
-					onclick={() => handleProductSelect(product)}
-					class="result-item"
-				>
-					<div class="result-name">{product.name}</div>
-					<div class="result-price">¥{product.current_price.toLocaleString('ja-JP')}</div>
-				</button>
-			{/each}
-		</div>
-	{:else if showResults && searchQuery}
-		<div class="no-results">
-			検索結果がありません
-		</div>
+	{#if showResults}
+		{#if searchResults.length > 0}
+			<div class="search-results">
+				<div class="results-header">
+					<span class="hit-count">{searchResults.length}件がヒットしました</span>
+				</div>
+				{#each searchResults as product (product.id)}
+					<div class="result-item">
+						<div class="product-info">
+							<div class="result-name">{product.name}</div>
+							<div class="result-price">¥{product.current_price.toLocaleString('ja-JP')}</div>
+						</div>
+						<button
+							onclick={() => handleProductSelect(product)}
+							class="btn-add-to-cart"
+						>
+							カートに追加
+						</button>
+					</div>
+				{/each}
+			</div>
+		{:else if searchQuery}
+			<div class="no-results">
+				検索結果がありません
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -162,21 +142,29 @@
 		padding-top: 1rem;
 	}
 
+	.results-header {
+		margin-bottom: 1rem;
+	}
+
+	.hit-count {
+		font-weight: 600;
+		color: #2c3e50;
+		font-size: 0.95rem;
+	}
+
 	.result-item {
-		display: block;
-		width: 100%;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 		padding: 0.75rem;
 		margin-bottom: 0.5rem;
 		border: 1px solid #ddd;
 		border-radius: 4px;
 		background-color: #f9f9f9;
-		cursor: pointer;
-		text-align: left;
-		transition: background-color 0.2s;
 	}
 
-	.result-item:hover {
-		background-color: #f0f0f0;
+	.product-info {
+		flex: 1;
 	}
 
 	.result-name {
@@ -188,6 +176,28 @@
 	.result-price {
 		font-size: 0.9rem;
 		color: #0066cc;
+	}
+
+	.btn-add-to-cart {
+		background-color: #28a745;
+		color: white;
+		padding: 0.5rem 1rem;
+		border: none;
+		border-radius: 4px;
+		cursor: pointer;
+		font-weight: 500;
+		margin-left: 0.5rem;
+		white-space: nowrap;
+		transition: background-color 0.2s;
+	}
+
+	.btn-add-to-cart:hover {
+		background-color: #218838;
+	}
+
+	.btn-add-to-cart:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.no-results {

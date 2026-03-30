@@ -25,6 +25,6 @@ type ProductWithPrice struct {
 	Barcode   string    `json:"barcode"`
 	IsActive  int       `json:"is_active"`
 	Note      *string   `json:"note"`
-	Price     int       `json:"price"`
+	Price     int       `json:"current_price"`
 	CreatedAt time.Time `json:"created_at"`
 }

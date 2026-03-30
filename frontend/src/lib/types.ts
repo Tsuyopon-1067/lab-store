@@ -37,16 +37,16 @@ export interface UserBalance {
 }
 
 export interface PurchaseRequest {
-	user_id: number;
+	user_barcode: string;
 	items: Array<{
 		product_id: number;
 		quantity: number;
-		unit_price: number;
+		unit_price?: number;
 	}>;
 }
 
 export interface PurchaseResponse {
-	id: number;
+	purchase_id: number;
 	user_id: number;
 	user_name: string;
 	total_amount: number;
@@ -57,10 +57,10 @@ export interface PurchaseResponse {
 
 export interface RestockItem {
 	product_id: number;
-	product_name: string;
+	product_name?: string;
 	quantity: number;
 	unit_price: number;
-	subtotal: number;
+	subtotal?: number;
 }
 
 export interface RestockRequest {
@@ -75,7 +75,7 @@ export interface RestockRequest {
 }
 
 export interface RestockResponse {
-	id: number;
+	restock_id: number;
 	user_id: number;
 	user_name: string;
 	total_amount: number;

@@ -54,6 +54,7 @@ func main() {
 	// 認証不要なエンドポイント
 	r.GET("/api/users/barcode/:code", handler.GetUserByBarcode(database))
 	r.GET("/api/products/barcode/:code", handler.GetProductByBarcode(database))
+	r.GET("/api/products/search", handler.SearchProducts(database))
 	r.GET("/api/products", handler.ListProducts(database))
 	r.POST("/api/purchases", handler.CreatePurchase(database))
 	r.POST("/api/restocks", handler.CreateRestock(database))
