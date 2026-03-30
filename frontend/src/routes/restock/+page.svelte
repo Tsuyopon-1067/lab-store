@@ -87,7 +87,7 @@
 			showModal = true;
 			resetTimeout();
 		} catch (err) {
-			errorMessage = err instanceof Error ? err.message : '商品が見つかりません';
+			errorMessage = '商品が見つかりません。管理画面から商品を追加してください';
 		} finally {
 			isLoading = false;
 		}
