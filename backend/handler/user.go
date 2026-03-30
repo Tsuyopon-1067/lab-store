@@ -16,6 +16,7 @@ type CreateUserRequest struct {
 
 type UpdateUserRequest struct {
 	Name     string `json:"name" binding:"required"`
+	Barcode  string `json:"barcode" binding:"required"`
 	IsActive *int   `json:"is_active"`
 }
 
@@ -81,7 +82,7 @@ func UpdateUser(db *sql.DB) gin.HandlerFunc {
 		}
 
 		repo := repository.NewUserRepository(db)
-		user, err := repo.Update(id, req.Name)
+		user, err := repo.Update(id, req.Name, req.Barcode)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 			return

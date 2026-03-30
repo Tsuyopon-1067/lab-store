@@ -137,10 +137,10 @@ func (r *ProductRepository) Create(name, barcode, note string, price int) (*mode
 	return product, nil
 }
 
-func (r *ProductRepository) Update(id int, name, note string) (*model.ProductWithPrice, error) {
+func (r *ProductRepository) Update(id int, name, barcode, note string) (*model.ProductWithPrice, error) {
 	_, err := r.db.Exec(
-		"UPDATE products SET name = ?, note = ? WHERE id = ?",
-		name, note, id,
+		"UPDATE products SET name = ?, barcode = ?, note = ? WHERE id = ?",
+		name, barcode, note, id,
 	)
 	if err != nil {
 		return nil, err
