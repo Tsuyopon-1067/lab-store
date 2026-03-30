@@ -22,6 +22,8 @@
 	let modalProduct: Product | null = $state(null);
 	let modalQuantity = $state(1);
 	let modalUnitPrice = $state(0);
+	let modalPriceMode: 'total' | 'unitPrice' = $state('total');
+	let modalTotalPrice = $state(0);
 
 	// タイムアウト設定
 	const TIMEOUT_MS = 5 * 60 * 1000; // 5分
@@ -83,7 +85,9 @@
 			const product = await apiCall<Product>(`/products/barcode/${encodeURIComponent(barcode)}`);
 			modalProduct = product;
 			modalUnitPrice = product.current_price;
+			modalTotalPrice = product.current_price;
 			modalQuantity = 1;
+			modalPriceMode = 'total';
 			showModal = true;
 			resetTimeout();
 		} catch (err) {
@@ -96,19 +100,35 @@
 	function addToRestockList() {
 		if (!modalProduct) return;
 
+		let unitPrice: number;
+		let subtotal: number;
+
+		if (modalPriceMode === 'total') {
+			unitPrice = modalQuantity > 0 ? Math.round(modalTotalPrice / modalQuantity) : modalTotalPrice;
+			subtotal = modalTotalPrice;
+		} else {
+			unitPrice = modalUnitPrice;
+			subtotal = modalQuantity * modalUnitPrice;
+		}
+
 		const existingItem = restockItems.find((item) => item.product_id === modalProduct!.id);
 
 		if (existingItem) {
 			existingItem.quantity += modalQuantity;
-			existingItem.unit_price = modalUnitPrice;
-			existingItem.subtotal = existingItem.quantity * existingItem.unit_price;
+			if (modalPriceMode === 'total') {
+				existingItem.subtotal = (existingItem.subtotal ?? 0) + subtotal;
+				existingItem.unit_price = Math.round(existingItem.subtotal! / existingItem.quantity);
+			} else {
+				existingItem.unit_price = unitPrice;
+				existingItem.subtotal = existingItem.quantity * unitPrice;
+			}
 		} else {
 			const newItem: RestockItem = {
 				product_id: modalProduct.id,
 				product_name: modalProduct.name,
 				quantity: modalQuantity,
-				unit_price: modalUnitPrice,
-				subtotal: modalQuantity * modalUnitPrice,
+				unit_price: unitPrice,
+				subtotal: subtotal,
 			};
 			restockItems = [...restockItems, newItem];
 		}
@@ -348,11 +368,29 @@
 		</div>
 	{/if}
 
-	<!-- 数量・単価入力モーダル -->
+	<!-- 数量・値段入力モーダル -->
 	{#if showModal && modalProduct}
 		<div class="modal-overlay" onclick={() => (showModal = false)}>
 			<div class="modal" onclick={(e) => e.stopPropagation()}>
 				<h3>{modalProduct.name}</h3>
+
+				<!-- 入力モード切り替え -->
+				<div class="price-mode-toggle">
+					<button
+						class="mode-btn"
+						class:active={modalPriceMode === 'total'}
+						onclick={() => (modalPriceMode = 'total')}
+					>
+						全体の値段
+					</button>
+					<button
+						class="mode-btn"
+						class:active={modalPriceMode === 'unitPrice'}
+						onclick={() => (modalPriceMode = 'unitPrice')}
+					>
+						単価
+					</button>
+				</div>
 
 				<div class="form-group">
 					<label for="quantity">数量</label>
@@ -365,16 +403,35 @@
 					/>
 				</div>
 
-				<div class="form-group">
-					<label for="unitPrice">単価</label>
-					<input
-						id="unitPrice"
-						type="number"
-						min="0"
-						bind:value={modalUnitPrice}
-						class="form-input"
-					/>
-				</div>
+				<!-- 全体の値段モード -->
+				{#if modalPriceMode === 'total'}
+					<div class="form-group">
+						<label for="totalPrice">全体の値段（円）</label>
+						<input
+							id="totalPrice"
+							type="number"
+							min="0"
+							bind:value={modalTotalPrice}
+							class="form-input"
+						/>
+					</div>
+					{#if modalQuantity > 0 && modalTotalPrice > 0}
+						<p class="calc-hint">
+							単価の目安: ¥{Math.round(modalTotalPrice / modalQuantity).toLocaleString('ja-JP')}
+						</p>
+					{/if}
+				{:else}
+					<div class="form-group">
+						<label for="unitPrice">単価（円）</label>
+						<input
+							id="unitPrice"
+							type="number"
+							min="0"
+							bind:value={modalUnitPrice}
+							class="form-input"
+						/>
+					</div>
+				{/if}
 
 				<div class="modal-actions">
 					<button onclick={() => (showModal = false)} class="btn-cancel">キャンセル</button>
@@ -714,6 +771,46 @@
 	.modal h3 {
 		margin: 0 0 1.5rem 0;
 		color: #2c3e50;
+	}
+
+	.price-mode-toggle {
+		display: flex;
+		gap: 0.5rem;
+		margin-bottom: 1.5rem;
+		background-color: #f0f0f0;
+		padding: 0.3rem;
+		border-radius: 4px;
+	}
+
+	.mode-btn {
+		flex: 1;
+		padding: 0.5rem 0.75rem;
+		border: none;
+		border-radius: 3px;
+		background-color: transparent;
+		color: #666;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color 0.2s, color 0.2s;
+		font-size: 0.9rem;
+	}
+
+	.mode-btn.active {
+		background-color: white;
+		color: #0066cc;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	}
+
+	.mode-btn:hover:not(.active) {
+		color: #333;
+	}
+
+	.calc-hint {
+		margin-top: -0.75rem;
+		margin-bottom: 1rem;
+		font-size: 0.85rem;
+		color: #0066cc;
+		font-weight: 500;
 	}
 
 	.form-input {
