@@ -125,12 +125,6 @@
 </script>
 
 <div class="barcode-input-container">
-    {#if cameraError}
-        <div class="error-message">
-            <strong>⚠️ {cameraError}</strong>
-        </div>
-    {/if}
-
     <div
         class="camera-section"
         style="display: {cameraActive ? 'block' : 'none'}"
