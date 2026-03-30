@@ -184,7 +184,7 @@
 
 	label {
 		font-weight: 500;
-		color: #eee;
+		color: #2c3e50;
 	}
 
 	select {
@@ -210,7 +210,7 @@
 	.empty-notice {
 		text-align: center;
 		padding: 2rem;
-		color: #eee;
+		color: #2c3e50;
 		font-size: 1rem;
 	}
 
@@ -268,7 +268,7 @@
 
 	.btn-secondary {
 		background-color: #f0f0f0;
-		color: #eee;
+		color: #2c3e50;
 		border: 1px solid #ddd;
 	}
 
@@ -283,7 +283,7 @@
 
 	.page-info {
 		font-weight: 500;
-		color: #eee;
+		color: #2c3e50;
 	}
 
 	@media (max-width: 768px) {
