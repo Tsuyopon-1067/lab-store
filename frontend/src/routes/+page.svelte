@@ -277,6 +277,7 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		background-color: #f9f9f9;
 	}
 
 	.container {
