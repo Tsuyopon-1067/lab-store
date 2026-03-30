@@ -163,7 +163,7 @@
 													{#each purchase.items as item (item.product_id)}
 														<tr>
 															<td class="product-name">{item.product_name}</td>
-															<td class="quantity">{item.quantity}</td>
+															<td class="quantity">{item.quantity}個</td>
 															<td class="unit-price">{formatCurrency(item.unit_price)}</td>
 															<td class="subtotal">{formatCurrency(item.subtotal)}</td>
 														</tr>
@@ -197,7 +197,7 @@
 													{#each restock.items as item (item.product_id)}
 														<tr>
 															<td class="product-name">{item.product_name}</td>
-															<td class="quantity">{item.quantity}</td>
+															<td class="quantity">{item.quantity}個</td>
 															<td class="unit-price">{formatCurrency(item.unit_price)}</td>
 															<td class="subtotal">{formatCurrency(item.subtotal)}</td>
 														</tr>
@@ -382,6 +382,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.95rem;
+		table-layout: fixed;
 	}
 
 	.items-table tbody tr:not(:last-child) {
@@ -390,23 +391,33 @@
 
 	.items-table td {
 		padding: 0.5rem 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.product-name {
 		text-align: left;
 		color: #2c3e50;
+		width: 50%;
 	}
 
-	.quantity,
-	.unit-price,
-	.subtotal {
+	.quantity {
 		text-align: right;
 		color: #666;
+		width: 15%;
+	}
+
+	.unit-price {
+		text-align: right;
+		color: #666;
+		width: 17.5%;
 	}
 
 	.subtotal {
+		text-align: right;
 		color: #0066cc;
 		font-weight: 600;
+		width: 17.5%;
 	}
 
 	@media (max-width: 768px) {
