@@ -118,7 +118,13 @@ func CreatePurchase(db *sql.DB) gin.HandlerFunc {
 			Items:       purchaseDetails,
 			TotalAmount: totalAmount,
 			PurchasedAt: purchase.PurchasedAt,
-			NewBalance:  balance.NetBalance,
+			UpdatedBalance: &model.BalanceSummary{
+				UserID:           user.ID,
+				UserName:         user.Name,
+				PurchaseUnpaid:   balance.PurchaseUnpaid,
+				RestockUnclaimed: balance.RestockUnclaimed,
+				NetBalance:       balance.NetBalance,
+			},
 		}
 
 		c.JSON(http.StatusCreated, response)

@@ -48,11 +48,11 @@ type CreatePurchaseRequest struct {
 }
 
 type PurchaseResponse struct {
-	PurchaseID  int                  `json:"purchase_id"`
-	UserID      int                  `json:"user_id"`
-	UserName    string               `json:"user_name"`
-	Items       []*PurchaseItemDetail `json:"items"`
-	TotalAmount int                  `json:"total_amount"`
-	PurchasedAt time.Time            `json:"purchased_at"`
-	NewBalance  int                  `json:"new_balance"`
+	PurchaseID     int                   `json:"purchase_id"`
+	UserID         int                   `json:"user_id"`
+	UserName       string                `json:"user_name"`
+	Items          []*PurchaseItemDetail `json:"items"`
+	TotalAmount    int                   `json:"total_amount"`
+	PurchasedAt    time.Time             `json:"purchased_at"`
+	UpdatedBalance *BalanceSummary       `json:"updated_balance"`
 }

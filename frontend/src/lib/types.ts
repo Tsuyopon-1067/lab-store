@@ -52,7 +52,7 @@ export interface PurchaseResponse {
 	total_amount: number;
 	items: CartItem[];
 	purchased_at: string;
-	new_balance: number;
+	updated_balance: UserBalance;
 }
 
 export interface RestockItem {
