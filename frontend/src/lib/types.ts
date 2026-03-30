@@ -37,22 +37,22 @@ export interface UserBalance {
 }
 
 export interface PurchaseRequest {
-	user_id: number;
+	user_barcode: string;
 	items: Array<{
 		product_id: number;
 		quantity: number;
-		unit_price: number;
+		unit_price?: number;
 	}>;
 }
 
 export interface PurchaseResponse {
-	id: number;
+	purchase_id: number;
 	user_id: number;
 	user_name: string;
 	total_amount: number;
 	items: CartItem[];
 	purchased_at: string;
-	updated_balance: UserBalance;
+	new_balance: number;
 }
 
 export interface RestockItem {

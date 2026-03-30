@@ -13,6 +13,7 @@
 	// 状態管理
 	let pageState: PageState = $state('idle');
 	let currentUser: UserBalance | null = $state(null);
+	let currentUserBarcode: string = $state('');
 	let cart: CartItem[] = $state([]);
 	let receipt: PurchaseResponse | null = $state(null);
 	let errorMessage = $state('');
@@ -34,6 +35,7 @@
 	function resetPurchaseSession() {
 		pageState = 'idle';
 		currentUser = null;
+		currentUserBarcode = '';
 		cart = [];
 		receipt = null;
 		errorMessage = '';
@@ -65,6 +67,7 @@
 				barcode,
 			);
 			currentUser = balance;
+			currentUserBarcode = barcode;
 			pageState = 'purchasing';
 			resetTimeout();
 		} catch (err) {
@@ -135,18 +138,17 @@
 
 	// 購入確定
 	async function handleConfirmPurchase() {
-		if (!currentUser || cart.length === 0) return;
+		if (!currentUser || !currentUserBarcode || cart.length === 0) return;
 
 		isLoading = true;
 		errorMessage = '';
 
 		try {
 			const purchaseRequest: PurchaseRequest = {
-				user_id: currentUser.user_id,
+				user_barcode: currentUserBarcode,
 				items: cart.map((item) => ({
 					product_id: item.product_id,
 					quantity: item.quantity,
-					unit_price: item.unit_price,
 				})),
 			};
 

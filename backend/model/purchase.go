@@ -23,10 +23,12 @@ type PurchaseDetail struct {
 }
 
 type PurchaseItemDetail struct {
-	Item        *PurchaseItem
-	ProductName string
-	ProductID   int
-	Subtotal    int
+	ID          int    `json:"id"`
+	ProductID   int    `json:"product_id"`
+	Quantity    int    `json:"quantity"`
+	UnitPrice   int    `json:"unit_price"`
+	Subtotal    int    `json:"subtotal"`
+	ProductName string `json:"product_name"`
 }
 
 type BalanceSummary struct {

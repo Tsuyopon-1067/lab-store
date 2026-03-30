@@ -102,9 +102,11 @@ func CreatePurchase(db *sql.DB) gin.HandlerFunc {
 		for _, item := range items {
 			product, _ := productRepo.GetByID(item.ProductID)
 			purchaseDetails = append(purchaseDetails, &model.PurchaseItemDetail{
-				Item:        item,
+				ID:          item.ID,
+				ProductID:   item.ProductID,
+				Quantity:    item.Quantity,
+				UnitPrice:   item.UnitPrice,
 				ProductName: product.Name,
-				ProductID:   product.ID,
 				Subtotal:    item.Quantity * item.UnitPrice,
 			})
 		}
