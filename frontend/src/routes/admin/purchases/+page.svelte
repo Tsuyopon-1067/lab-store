@@ -80,6 +80,25 @@
         currentPage++;
         loadPurchases();
     }
+
+    async function deletePurchase(purchaseId: number) {
+        if (!confirm(`購入 #${purchaseId} を削除しますか？この操作は取り消せません。`)) {
+            return;
+        }
+
+        try {
+            await apiCallWithAuth(`/purchases/${purchaseId}`, {
+                method: "DELETE",
+            });
+            // Refresh the list after deletion
+            await loadPurchases();
+        } catch (err) {
+            errorMessage =
+                err instanceof Error
+                    ? err.message
+                    : "削除に失敗しました";
+        }
+    }
 </script>
 
 <div class="purchases-page">
@@ -121,6 +140,7 @@
                         <th>購入ID</th>
                         <th>ユーザー</th>
                         <th>購入日時</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -129,6 +149,15 @@
                             <td>#{purchase.id}</td>
                             <td>{getUserName(purchase.user_id)}</td>
                             <td>{formatDate(purchase.purchased_at)}</td>
+                            <td>
+                                <button
+                                    class="btn btn-delete"
+                                    onclick={() => deletePurchase(purchase.id)}
+                                    disabled={isLoading}
+                                >
+                                    削除
+                                </button>
+                            </td>
                         </tr>
                     {/each}
                 </tbody>
@@ -290,6 +319,18 @@
     .btn-secondary:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+    }
+
+    .btn-delete {
+        background-color: #fee;
+        color: #c00;
+        border: 1px solid #fcc;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    .btn-delete:hover:not(:disabled) {
+        background-color: #fdd;
     }
 
     .page-info {
