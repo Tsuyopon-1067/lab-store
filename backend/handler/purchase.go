@@ -283,7 +283,7 @@ func ExportPurchasesCSV(db *sql.DB) gin.HandlerFunc {
 				}
 
 				subtotal := item.Quantity * item.UnitPrice
-				uniqueID := fmt.Sprintf("%s_%03d", purchaseIDStr, idx+1)
+				uniqueID := fmt.Sprintf("%s%03d", purchaseIDStr, idx+1)
 
 				writer.Write([]string{
 					uniqueID,
