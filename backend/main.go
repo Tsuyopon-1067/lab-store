@@ -120,6 +120,10 @@ func main() {
 		// バックアップ
 		admin.POST("/backup", handler.CreateBackup(database, cfg))
 		admin.GET("/backup/list", handler.ListBackups(database, cfg))
+
+		// 設定
+		admin.GET("/settings", handler.GetSettings(database))
+		admin.PUT("/settings", handler.UpdateSettings(database))
 	}
 
 	// ヘルスチェック
@@ -128,7 +132,7 @@ func main() {
 	})
 
 	// 定期バックアップスケジューラー起動
-	service.StartDailyBackupScheduler(database, cfg)
+	service.StartIntervalBackupScheduler(database, cfg)
 
 	// サーバー起動
 	port := fmt.Sprintf(":%d", cfg.Server.Port)
