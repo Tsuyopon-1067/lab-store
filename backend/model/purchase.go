@@ -69,3 +69,20 @@ type PurchaseResponse struct {
 	PurchasedAt    time.Time             `json:"purchased_at"`
 	UpdatedBalance *BalanceSummary       `json:"updated_balance"`
 }
+
+type AdminPurchaseItem struct {
+	ProductID   int    `json:"product_id"`
+	ProductName string `json:"product_name"`
+	Quantity    int    `json:"quantity"`
+	UnitPrice   int    `json:"unit_price"`
+	Subtotal    int    `json:"subtotal"`
+}
+
+type AdminPurchaseWithItems struct {
+	ID          int                  `json:"id"`
+	UserID      int                  `json:"user_id"`
+	UserName    string               `json:"user_name"`
+	PurchasedAt time.Time            `json:"purchased_at"`
+	TotalAmount int                  `json:"total_amount"`
+	Items       []*AdminPurchaseItem `json:"items"`
+}
