@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/csv"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -250,7 +251,7 @@ func ExportPurchasesCSV(db *sql.DB) gin.HandlerFunc {
 		writer := csv.NewWriter(&buf)
 
 		// Write header
-		writer.Write([]string{"Purchase ID", "User", "Purchased At", "Product", "Quantity", "Subtotal"})
+		writer.Write([]string{"ID", "Purchase ID", "User", "Purchased At", "Product", "Quantity", "Subtotal"})
 
 		productRepo := repository.NewProductRepository(db)
 		purchaseRepo := repository.NewPurchaseRepository(db)
@@ -274,7 +275,7 @@ func ExportPurchasesCSV(db *sql.DB) gin.HandlerFunc {
 			purchaseIDStr := strconv.Itoa(id)
 			purchasedAtStr := purchasedAt.Format("2006-01-02 15:04:05")
 
-			for _, item := range items {
+			for idx, item := range items {
 				product, err := productRepo.GetByID(item.ProductID)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -282,7 +283,10 @@ func ExportPurchasesCSV(db *sql.DB) gin.HandlerFunc {
 				}
 
 				subtotal := item.Quantity * item.UnitPrice
+				uniqueID := fmt.Sprintf("%s_%03d", purchaseIDStr, idx+1)
+
 				writer.Write([]string{
+					uniqueID,
 					purchaseIDStr,
 					userName,
 					purchasedAtStr,
