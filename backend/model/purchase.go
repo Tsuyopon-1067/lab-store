@@ -3,17 +3,23 @@ package model
 import "time"
 
 type Purchase struct {
-	ID          int       `json:"id"`
-	UserID      int       `json:"user_id"`
-	PurchasedAt time.Time `json:"purchased_at"`
+	ID          int        `json:"id"`
+	UserID      int        `json:"user_id"`
+	PurchasedAt time.Time  `json:"purchased_at"`
+	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
 }
 
 type PurchaseItem struct {
-	ID         int    `json:"id"`
-	PurchaseID int    `json:"purchase_id"`
-	ProductID  int    `json:"product_id"`
-	Quantity   int    `json:"quantity"`
-	UnitPrice  int    `json:"unit_price"`
+	ID         int        `json:"id"`
+	PurchaseID int        `json:"purchase_id"`
+	ProductID  int        `json:"product_id"`
+	Quantity   int        `json:"quantity"`
+	UnitPrice  int        `json:"unit_price"`
+	DeletedAt  *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  *time.Time `json:"updated_at,omitempty"`
 }
 
 type PurchaseDetail struct {

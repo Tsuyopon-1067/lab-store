@@ -140,11 +140,11 @@ func ListPurchases(db *sql.DB) gin.HandlerFunc {
 		limitInt, _ := strconv.Atoi(limit)
 		offsetInt, _ := strconv.Atoi(offset)
 
-		query := "SELECT id, user_id, purchased_at FROM purchases ORDER BY purchased_at DESC"
+		query := "SELECT id, user_id, purchased_at FROM purchases WHERE deleted_at IS NULL ORDER BY purchased_at DESC"
 		args := []interface{}{}
 
 		if userID != "" {
-			query = "SELECT id, user_id, purchased_at FROM purchases WHERE user_id = ? ORDER BY purchased_at DESC"
+			query = "SELECT id, user_id, purchased_at FROM purchases WHERE user_id = ? AND deleted_at IS NULL ORDER BY purchased_at DESC"
 			args = append(args, userID)
 		}
 
@@ -169,5 +169,23 @@ func ListPurchases(db *sql.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, purchases)
+	}
+}
+
+func DeletePurchase(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid purchase ID"})
+			return
+		}
+
+		repo := repository.NewPurchaseRepository(db)
+		if err := repo.Delete(id); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete purchase"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Purchase deleted"})
 	}
 }

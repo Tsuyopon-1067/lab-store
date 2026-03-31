@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"purchase-system/model"
 	"time"
 )
@@ -77,9 +78,9 @@ func (r *PurchaseRepository) Create(userID int, items []struct {
 func (r *PurchaseRepository) GetByID(id int) (*model.Purchase, error) {
 	purchase := &model.Purchase{}
 	err := r.db.QueryRow(
-		"SELECT id, user_id, purchased_at FROM purchases WHERE id = ?",
+		"SELECT id, user_id, purchased_at, deleted_at, created_at, updated_at FROM purchases WHERE id = ? AND deleted_at IS NULL",
 		id,
-	).Scan(&purchase.ID, &purchase.UserID, &purchase.PurchasedAt)
+	).Scan(&purchase.ID, &purchase.UserID, &purchase.PurchasedAt, &purchase.DeletedAt, &purchase.CreatedAt, &purchase.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -112,7 +113,7 @@ func (r *PurchaseRepository) GetItemsByPurchaseID(purchaseID int) ([]*model.Purc
 
 func (r *PurchaseRepository) GetByUserID(userID int) ([]*model.Purchase, error) {
 	rows, err := r.db.Query(
-		"SELECT id, user_id, purchased_at FROM purchases WHERE user_id = ? ORDER BY purchased_at DESC",
+		"SELECT id, user_id, purchased_at, deleted_at, created_at, updated_at FROM purchases WHERE user_id = ? AND deleted_at IS NULL ORDER BY purchased_at DESC",
 		userID,
 	)
 	if err != nil {
@@ -123,7 +124,7 @@ func (r *PurchaseRepository) GetByUserID(userID int) ([]*model.Purchase, error) 
 	var purchases []*model.Purchase
 	for rows.Next() {
 		purchase := &model.Purchase{}
-		if err := rows.Scan(&purchase.ID, &purchase.UserID, &purchase.PurchasedAt); err != nil {
+		if err := rows.Scan(&purchase.ID, &purchase.UserID, &purchase.PurchasedAt, &purchase.DeletedAt, &purchase.CreatedAt, &purchase.UpdatedAt); err != nil {
 			return nil, err
 		}
 		purchases = append(purchases, purchase)
@@ -133,7 +134,7 @@ func (r *PurchaseRepository) GetByUserID(userID int) ([]*model.Purchase, error) 
 
 func (r *PurchaseRepository) ListAll() ([]*model.Purchase, error) {
 	rows, err := r.db.Query(
-		"SELECT id, user_id, purchased_at FROM purchases ORDER BY purchased_at DESC",
+		"SELECT id, user_id, purchased_at, deleted_at, created_at, updated_at FROM purchases WHERE deleted_at IS NULL ORDER BY purchased_at DESC",
 	)
 	if err != nil {
 		return nil, err
@@ -143,10 +144,50 @@ func (r *PurchaseRepository) ListAll() ([]*model.Purchase, error) {
 	var purchases []*model.Purchase
 	for rows.Next() {
 		purchase := &model.Purchase{}
-		if err := rows.Scan(&purchase.ID, &purchase.UserID, &purchase.PurchasedAt); err != nil {
+		if err := rows.Scan(&purchase.ID, &purchase.UserID, &purchase.PurchasedAt, &purchase.DeletedAt, &purchase.CreatedAt, &purchase.UpdatedAt); err != nil {
 			return nil, err
 		}
 		purchases = append(purchases, purchase)
 	}
 	return purchases, rows.Err()
+}
+
+func (r *PurchaseRepository) Delete(id int) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Get the old record
+	oldPurchase := &model.Purchase{}
+	err = tx.QueryRow(
+		"SELECT id, user_id, purchased_at, deleted_at, created_at, updated_at FROM purchases WHERE id = ?",
+		id,
+	).Scan(&oldPurchase.ID, &oldPurchase.UserID, &oldPurchase.PurchasedAt, &oldPurchase.DeletedAt, &oldPurchase.CreatedAt, &oldPurchase.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	oldJSON, _ := json.Marshal(oldPurchase)
+
+	now := time.Now()
+	_, err = tx.Exec(
+		"UPDATE purchases SET deleted_at = ?, updated_at = ? WHERE id = ?",
+		now, now, id,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Record audit log (after_json is NULL for deletions)
+	_, err = tx.Exec(
+		"INSERT INTO audit_logs (table_name, record_id, action, before_json, after_json) VALUES (?, ?, ?, ?, NULL)",
+		"purchases", id, "delete", string(oldJSON),
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
