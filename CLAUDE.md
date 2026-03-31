@@ -103,6 +103,184 @@ podman-compose exec backend /app/server setup
 goose sqlite ./data/purchase.db status
 ```
 
+## コーディングパターン
+
+### バックエンド（Go/Gin）
+
+#### ハンドラー（handler/）
+```go
+// クロージャーパターン：db/configを受け取り gin.HandlerFunc を返す
+func CreateProduct(db *sql.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var req CreateProductRequest
+        if err := c.ShouldBindJSON(&req); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+        }
+        
+        repo := repository.NewProductRepository(db)
+        // 処理...
+        
+        c.JSON(http.StatusOK, result)
+    }
+}
+```
+- 全ハンドラーはクロージャー形式（db/cfg を受け取る）
+- リクエストバリデーション：`c.ShouldBindJSON(&req)`、`binding:"required"` タグ使用
+- エラーレスポンス：`gin.H{"error": "message"}` で統一
+- 成功時：対応する HTTP ステータス（201 Created、200 OK 等）
+
+#### リポジトリ（repository/）
+```go
+type UserRepository struct { db *sql.DB }
+
+func NewUserRepository(db *sql.DB) *UserRepository { ... }
+
+func (r *UserRepository) Get(id int) (*model.User, error) { ... }
+func (r *UserRepository) Create(req *model.CreateUserRequest) (*model.User, error) { ... }
+```
+- 構造体に `db *sql.DB` のみを持つ
+- `New*Repository` コンストラクタで初期化
+- メソッドレシーバーは ポインタレシーバー `(r *XxxRepository)`
+
+#### ミドルウェア（middleware/）
+```go
+func AdminAuth(db *sql.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        // 認証ロジック
+        if err := verify() {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "..."})
+            c.Abort()
+            return
+        }
+        c.Set("key", value)
+        c.Next()
+    }
+}
+```
+- ハンドラーと同じクロージャーパターン
+- 認証失敗時は `c.Abort()` + JSON レスポンス
+- 成功時は `c.Set()` で値を格納してから `c.Next()`
+
+#### マイグレーション（db/migrations/）
+```sql
+-- +goose Up
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    ...
+);
+
+-- +goose Down
+DROP TABLE users;
+```
+- goose 形式（`-- +goose Up/Down` で囲む）
+- 連番ファイル命名（`001_*.sql`, `002_*.sql` ...）
+
+### フロントエンド（SvelteKit）
+
+#### ページコンポーネント（routes/admin/）
+```svelte
+<script lang="ts">
+    import { onMount } from 'svelte';
+    import { apiCallWithAuth } from '$lib/api';
+    import type { Product } from '$lib/types';
+
+    let products = $state([]);
+    let isLoading = $state(true);
+    let errorMessage = $state('');
+
+    onMount(async () => {
+        await loadData();
+    });
+
+    async function loadData() {
+        isLoading = true;
+        errorMessage = '';
+        try {
+            const data = await apiCallWithAuth<Product[]>('/products');
+            products = data;
+        } catch (err) {
+            errorMessage = err instanceof Error ? err.message : 'Failed to load';
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    async function handleCreate() {
+        try {
+            const result = await apiCallWithAuth<Product>('/products', {
+                method: 'POST',
+                body: JSON.stringify({ name: '...', ... })
+            });
+            // 成功後は loadData() で再取得
+            await loadData();
+        } catch (err) {
+            errorMessage = err instanceof Error ? err.message : 'Failed to create';
+        }
+    }
+</script>
+
+<div class="page">
+    {#if isLoading}
+        <div>読み込み中...</div>
+    {/if}
+    
+    <!-- コンテンツ -->
+</div>
+
+<style>
+    /* スコープ付きスタイル */
+</style>
+```
+- Svelte 5 runes：`$state()`, `$effect()` を使用
+- API呼び出し：`apiCallWithAuth()` を使用（セッションCookie自動付加）
+- 非認証 API（バーコード）：`apiCallWithBarcode(endpoint, barcode, options)`
+- 状態管理：`isLoading`, `errorMessage` など `$state` で宣言
+- `onMount` で初期データ読み込み
+- エラーは `try-catch` でキャッチして `errorMessage` に格納
+- スタイルは各ファイルにスコープ付き `<style>` で定義（外部 CSS ライブラリなし）
+
+#### 型定義（lib/types.ts）
+```typescript
+export interface Product {
+    id: number;
+    name: string;
+    barcode: string;
+    is_active: boolean;
+    current_price: number;
+    created_at: string;
+    note?: string;
+}
+
+export interface CreateProductRequest {
+    name: string;
+    barcode: string;
+    price: number;
+    note?: string;
+}
+```
+- バックエンドの struct フィールド名を snake_case で対応
+
+#### API呼び出し（lib/api.ts）
+```typescript
+// 管理者（セッション）
+const data = await apiCallWithAuth<ResponseType>('/endpoint', {
+    method: 'POST',
+    body: JSON.stringify(req)
+});
+
+// 一般利用者（バーコード）
+const data = await apiCallWithBarcode<ResponseType>('/endpoint', barcodeValue, {
+    method: 'GET'
+});
+```
+- `apiCallWithAuth` は Cookie に格納された admin_session を自動付加
+- `apiCallWithBarcode` は `X-User-Barcode` ヘッダを自動付加
+- エラー時は Error を throw（呼び出し元で catch）
+
+---
+
 ## Git ワークフロー
 
 ### ブランチ戦略
