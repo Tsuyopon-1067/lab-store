@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/csv"
 	"net/http"
 	"strconv"
 	"time"
@@ -229,5 +231,76 @@ func DeletePurchase(db *sql.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Purchase deleted"})
+	}
+}
+
+func ExportPurchasesCSV(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		query := "SELECT p.id, p.user_id, u.name, p.purchased_at FROM purchases p JOIN users u ON p.user_id = u.id WHERE p.deleted_at IS NULL ORDER BY p.purchased_at DESC"
+		args := []interface{}{}
+
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+		defer rows.Close()
+
+		var buf bytes.Buffer
+		writer := csv.NewWriter(&buf)
+
+		// Write header
+		writer.Write([]string{"Purchase ID", "User", "Purchased At", "Product", "Quantity", "Subtotal"})
+
+		productRepo := repository.NewProductRepository(db)
+		purchaseRepo := repository.NewPurchaseRepository(db)
+
+		for rows.Next() {
+			var id, userID int
+			var userName string
+			var purchasedAt time.Time
+			if err := rows.Scan(&id, &userID, &userName, &purchasedAt); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+				return
+			}
+
+			// Get purchase items
+			items, err := purchaseRepo.GetItemsByPurchaseID(id)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+				return
+			}
+
+			purchaseIDStr := strconv.Itoa(id)
+			purchasedAtStr := purchasedAt.Format("2006-01-02 15:04:05")
+
+			for _, item := range items {
+				product, err := productRepo.GetByID(item.ProductID)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+					return
+				}
+
+				subtotal := item.Quantity * item.UnitPrice
+				writer.Write([]string{
+					purchaseIDStr,
+					userName,
+					purchasedAtStr,
+					product.Name,
+					strconv.Itoa(item.Quantity),
+					strconv.Itoa(subtotal),
+				})
+			}
+		}
+
+		writer.Flush()
+		if err := writer.Error(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "CSV generation error"})
+			return
+		}
+
+		c.Header("Content-Type", "text/csv")
+		c.Header("Content-Disposition", "attachment; filename=purchases.csv")
+		c.Data(http.StatusOK, "text/csv", buf.Bytes())
 	}
 }

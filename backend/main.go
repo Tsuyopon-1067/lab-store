@@ -96,6 +96,7 @@ func main() {
 		admin.GET("/products/:id/prices", handler.GetPriceHistory(database))
 
 		admin.GET("/purchases", handler.ListPurchases(database))
+		admin.GET("/purchases/export", handler.ExportPurchasesCSV(database))
 		admin.DELETE("/purchases/:id", handler.DeletePurchase(database))
 		admin.GET("/purchases/summary", handler.GetSummary(database))
 
