@@ -59,23 +59,46 @@ func (s *BackupService) ListBackups() ([]*model.Backup, error) {
 	return s.repo.ListAll()
 }
 
-// StartDailyBackupScheduler starts a goroutine that runs a backup every day at midnight (local time).
-func StartDailyBackupScheduler(db *sql.DB, cfg *config.Config) {
-	svc := NewBackupService(db, cfg)
+// StartIntervalBackupScheduler starts a goroutine that runs a backup every
+// backup_interval_minutes as configured in the settings table. The interval
+// is re-read from the database at the start of each sleep cycle so that
+// changes to settings take effect on the next cycle (not mid-sleep).
+func StartIntervalBackupScheduler(db *sql.DB, cfg *config.Config) {
+	settingRepo := repository.NewSettingRepository(db)
 	go func() {
 		for {
-			// Calculate time until next midnight
-			now := time.Now()
-			nextMidnight := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
-			waitDuration := time.Until(nextMidnight)
+			// Read current settings; fall back to config defaults if DB read fails
+			intervalMinutes := cfg.Backup.Interval
+			backupPath := cfg.Backup.Path
 
-			// Log next execution time
-			log.Printf("daily backup scheduler: next run at %s", nextMidnight.Format("2006-01-02 15:04:05"))
+			setting, err := settingRepo.Get()
+			if err != nil {
+				log.Printf("backup scheduler: failed to read settings, using defaults: %v", err)
+			} else {
+				intervalMinutes = setting.BackupIntervalMinutes
+				backupPath = setting.BackupPath
+			}
 
-			// Wait until midnight
-			time.Sleep(waitDuration)
+			// Enforce safe minimum (10 minutes)
+			const minIntervalMinutes = 10
+			if intervalMinutes < minIntervalMinutes {
+				log.Printf("backup scheduler: interval %d too small, using %d minutes",
+					intervalMinutes, minIntervalMinutes)
+				intervalMinutes = minIntervalMinutes
+			}
 
-			// Execute backup
+			sleepDuration := time.Duration(intervalMinutes) * time.Minute
+			log.Printf("backup scheduler: next run in %d minutes", intervalMinutes)
+
+			time.Sleep(sleepDuration)
+
+			// Create service with current backup path for this cycle
+			svc := &BackupService{
+				db:         db,
+				backupPath: backupPath,
+				dbPath:     cfg.Database.Path,
+				repo:       repository.NewBackupRepository(db),
+			}
 			backup, err := svc.CreateBackup()
 			if err != nil {
 				log.Printf("auto backup failed: %v", err)
