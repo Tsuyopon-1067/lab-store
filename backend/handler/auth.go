@@ -8,6 +8,7 @@ import (
 	"purchase-system/config"
 	"purchase-system/model"
 	"purchase-system/middleware"
+	"purchase-system/repository"
 	"purchase-system/service"
 )
 
@@ -19,9 +20,15 @@ func Login(db *sql.DB, cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
+		// Get session timeout from settings, fall back to config default
+		timeoutMinutes := cfg.Session.TimeoutMinutes
+		if setting, err := repository.NewSettingRepository(db).Get(); err == nil {
+			timeoutMinutes = setting.SessionTimeoutMinutes
+		}
+
 		// ログイン処理
 		authService := service.NewAuthService(db)
-		session, err := authService.Login(req.Password, cfg.Session.TimeoutMinutes)
+		session, err := authService.Login(req.Password, timeoutMinutes)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
 			return
@@ -31,7 +38,7 @@ func Login(db *sql.DB, cfg *config.Config) gin.HandlerFunc {
 		c.SetCookie(
 			middleware.SessionCookieName,
 			session.Token,
-			cfg.Session.TimeoutMinutes*60,
+			timeoutMinutes*60,
 			"/",
 			"localhost",
 			false,
