@@ -73,3 +73,130 @@ sudo systemctl enable --now purchase-system
 
 - 開発時: http://localhost:5173
 - 本番時: http://localhost:3000
+
+## 外部API（APIキー認証）
+
+### 概要
+
+ボット・外部システム向けの API キー認証を使用した外部 API エンドポイントを提供しています。
+
+### APIキーの生成
+
+1. 管理画面にログイン
+2. 管理者メニュー → API キー管理ページへアクセス
+3. **新規作成** ボタンから、APIキーに付ける名前を入力
+4. 表示された生キー（64文字）を**安全に保管** - このタイミングでのみ表示されます
+
+### 使用方法
+
+外部からのリクエストに `X-API-Key` ヘッダを含めて API を呼び出します。
+
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  http://localhost:8080/v1/users/4912345678901/balance
+```
+
+### 利用可能なエンドポイント
+
+#### 1. ユーザーの残高を取得（バーコード指定）
+
+```
+GET /v1/users/{barcode}/balance
+```
+
+**レスポンス例:**
+```json
+{
+  "user_id": 1,
+  "user_name": "山田 太郎",
+  "purchase_unpaid": 1000,
+  "restock_unclaimed": 800,
+  "net_balance": 200
+}
+```
+
+#### 2. ユーザーの残高を取得（名前指定）
+
+```
+GET /v1/users/by-name/{name}/balance
+```
+
+**レスポンス例:**
+```json
+{
+  "user_id": 1,
+  "user_name": "山田 太郎",
+  "purchase_unpaid": 1000,
+  "restock_unclaimed": 800,
+  "net_balance": 200
+}
+```
+
+#### 3. 月次レポートを取得
+
+```
+GET /v1/reports/monthly?from=2026-03-01&to=2026-03-31
+```
+
+**クエリパラメータ:**
+- `from`: 集計開始日（YYYY-MM-DD形式）
+- `to`: 集計終了日（YYYY-MM-DD形式）
+
+**レスポンス例:**
+```json
+{
+  "period": {
+    "from": "2026-03-01",
+    "to": "2026-03-31"
+  },
+  "users": [
+    {
+      "user_id": 1,
+      "user_name": "山田 太郎",
+      "purchase_total": 1000,
+      "purchase_paid": 800,
+      "purchase_unpaid": 200,
+      "restock_total": 500,
+      "restock_settled": 500,
+      "restock_unclaimed": 0,
+      "net_balance": 200
+    }
+  ]
+}
+```
+
+#### 4. 商品一覧を取得（外部向け）
+
+```
+GET /v1/products
+```
+
+**レスポンス例:**
+```json
+[
+  {
+    "id": 1,
+    "name": "コーヒー",
+    "barcode": "4912345678901",
+    "current_price": 100,
+    "is_active": 1
+  }
+]
+```
+
+### セキュリティ
+
+- API キーは **SHA256 ハッシュ** で保存されます
+- 生キーは**作成時のみ**表示されます
+- キープレフィックス（先頭8文字）で管理可能
+- `is_active` フラグで有効/無効を切り替え可能
+- `last_used_at` で最後の使用日時を追跡可能
+- 不要なキーは削除してください
+
+### API キーの管理
+
+管理画面から以下の操作が可能です：
+
+- **一覧表示**: 作成済みのすべての API キーを確認
+- **削除**: 不要なキーを削除（削除後は復元不可）
+- **有効/無効**: キーを有効/無効に切り替え
