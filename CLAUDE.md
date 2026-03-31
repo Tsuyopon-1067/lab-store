@@ -103,6 +103,33 @@ podman-compose exec backend /app/server setup
 goose sqlite ./data/purchase.db status
 ```
 
+## Git ワークフロー
+
+### ブランチ戦略
+- 機能追加・バグ修正は新しいブランチを作成して行う（例: `feature/settings-management`, `fix/login-timeout`）
+- main ブランチへのマージは PR を通じて行う
+
+### コミットメッセージ
+- **必ず英語で作成する**
+- 1 行目：変更内容の要約（70 文字以内）
+- 2 行目以降：詳細な説明（必要に応じて）
+- 末尾に署名を含める：`Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>`
+
+例：
+```
+add settings table migration
+
+Create a single-row settings table to store system configuration.
+
+Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>
+```
+
+### コミット粒度
+- 1 つのコミットは 1 つの論理的な変更を表す
+- マイグレーション、モデル、リポジトリ、ハンドラなど機能を構成する各要素を段階的にコミットする
+- テストやドキュメント更新は対応する機能変更と同じコミットまたは別のコミットに分ける
+- コミットは小さく保つ（レビュー可能なサイズ）
+
 ## go.mod の主要依存パッケージ
 
 ```
