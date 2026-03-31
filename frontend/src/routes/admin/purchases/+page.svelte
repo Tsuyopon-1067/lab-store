@@ -87,10 +87,43 @@
                     : "削除に失敗しました";
         }
     }
+
+    async function exportToCSV() {
+        try {
+            const response = await fetch("/api/purchases/export", {
+                method: "GET",
+                credentials: "include",
+            });
+
+            if (!response.ok) {
+                throw new Error("CSV export failed");
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `purchases_${new Date().toISOString().split("T")[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            errorMessage =
+                err instanceof Error ? err.message : "CSV出力に失敗しました";
+        }
+    }
 </script>
 
 <div class="purchases-page">
-    <h1>購入履歴</h1>
+    <div class="header">
+        <h1>購入履歴</h1>
+        {#if purchases.length > 0}
+            <button class="btn btn-export" onclick={exportToCSV} disabled={isLoading}>
+                📥 CSV出力
+            </button>
+        {/if}
+    </div>
 
     {#if errorMessage}
         <div class="alert alert-error">
@@ -185,8 +218,15 @@
         max-width: 1200px;
     }
 
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
     h1 {
-        margin: 0 0 2rem 0;
+        margin: 0;
         font-size: 1.8rem;
         color: #fff;
     }
@@ -362,6 +402,21 @@
 
     .btn-delete:hover:not(:disabled) {
         background-color: #fdd;
+    }
+
+    .btn-export {
+        background-color: #0066cc;
+        color: white;
+        border: none;
+    }
+
+    .btn-export:hover:not(:disabled) {
+        background-color: #0052a3;
+    }
+
+    .btn-export:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
     .page-info {
