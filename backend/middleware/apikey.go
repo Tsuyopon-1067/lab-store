@@ -35,3 +35,15 @@ func APIKeyAuth(db *sql.DB) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// ReadOnlyAPI restricts external API to GET requests only
+func ReadOnlyAPI() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method != "GET" {
+			c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Only GET method is allowed for external API"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
