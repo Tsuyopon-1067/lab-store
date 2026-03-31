@@ -43,6 +43,27 @@ func (r *UserRepository) GetByBarcode(barcode string) (*model.User, error) {
 	return user, nil
 }
 
+func (r *UserRepository) GetByName(name string) ([]*model.User, error) {
+	rows, err := r.db.Query(
+		"SELECT id, name, barcode, is_active, created_at FROM users WHERE name = ? AND is_active = 1",
+		name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*model.User
+	for rows.Next() {
+		user := &model.User{}
+		if err := rows.Scan(&user.ID, &user.Name, &user.Barcode, &user.IsActive, &user.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, rows.Err()
+}
+
 func (r *UserRepository) ListAll() ([]*model.User, error) {
 	rows, err := r.db.Query("SELECT id, name, barcode, is_active, created_at FROM users ORDER BY created_at DESC")
 	if err != nil {

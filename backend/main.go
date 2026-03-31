@@ -74,6 +74,7 @@ func main() {
 	// 外部API（APIキー認証）
 	v1 := r.Group("/v1", middleware.APIKeyAuth(database))
 	{
+		v1.GET("/users/by-name/:name/balance", handler.GetUserBalanceByName(database))
 		v1.GET("/users/:barcode/balance", handler.GetUserBalance(database))
 		v1.GET("/reports/monthly", handler.GetMonthlyReport(database))
 		v1.GET("/products", handler.ListProductsExternal(database))

@@ -30,6 +30,7 @@
                     <li><a href="/admin/restock-payments">立替精算</a></li>
                     <li><a href="/admin/summary">月次精算</a></li>
                     <li><a href="/admin/backup">バックアップ</a></li>
+                    <li><a href="/admin/api-keys">APIキー管理</a></li>
                     <li><a href="/admin/settings">設定</a></li>
                 </ul>
             </nav>
