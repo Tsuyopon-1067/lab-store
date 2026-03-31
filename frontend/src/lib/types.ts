@@ -220,3 +220,11 @@ export interface CreateAPIKeyResponse {
 	created_at: string;
 	last_used_at: string | null;
 }
+
+export interface Setting {
+	id: number;
+	session_timeout_minutes: number;
+	backup_path: string;
+	backup_interval_minutes: number;
+	updated_at: string;
+}
