@@ -55,6 +55,15 @@ func (r *PurchaseRepository) Create(userID int, items []struct {
 			return nil, nil, err
 		}
 
+		// Decrement product stock quantity
+		_, err = tx.Exec(
+			"UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
+			item.Quantity, item.ProductID,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+
 		purchaseItems = append(purchaseItems, &model.PurchaseItem{
 			ID:         int(itemID),
 			PurchaseID: int(purchaseID),
@@ -167,6 +176,30 @@ func (r *PurchaseRepository) Delete(id int) error {
 	).Scan(&oldPurchase.ID, &oldPurchase.UserID, &oldPurchase.PurchasedAt, &oldPurchase.DeletedAt, &oldPurchase.CreatedAt, &oldPurchase.UpdatedAt)
 	if err != nil {
 		return err
+	}
+
+	// Restore stock quantities for all items in this purchase
+	rows, err := tx.Query(
+		"SELECT product_id, quantity FROM purchase_items WHERE purchase_id = ?",
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var productID, quantity int
+		if err := rows.Scan(&productID, &quantity); err != nil {
+			return err
+		}
+		_, err = tx.Exec(
+			"UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?",
+			quantity, productID,
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	oldJSON, _ := json.Marshal(oldPurchase)

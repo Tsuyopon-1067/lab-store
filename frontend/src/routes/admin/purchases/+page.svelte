@@ -1,10 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { apiCallWithAuth } from "$lib/api";
-    import type { AdminPurchase, AdminUser } from "$lib/types";
+    import type { AdminPurchaseWithItems } from "$lib/types";
 
-    let purchases: AdminPurchase[] = $state([]);
-    let users: AdminUser[] = $state([]);
+    let purchases: AdminPurchaseWithItems[] = $state([]);
     let isLoading = $state(false);
     let errorMessage = $state("");
 
@@ -14,18 +13,8 @@
     const itemsPerPage = 50;
 
     onMount(async () => {
-        await loadUsers();
         await loadPurchases();
     });
-
-    async function loadUsers() {
-        try {
-            const data = await apiCallWithAuth<AdminUser[]>("/users");
-            users = data || [];
-        } catch (err) {
-            console.error("Failed to load users:", err);
-        }
-    }
 
     async function loadPurchases() {
         isLoading = true;
@@ -41,7 +30,7 @@
                 params.append("user_id", selectedUserId.toString());
             }
 
-            const data = await apiCallWithAuth<AdminPurchase[]>(
+            const data = await apiCallWithAuth<AdminPurchaseWithItems[]>(
                 `/purchases?${params}`,
             );
             purchases = data || [];
@@ -55,11 +44,6 @@
         }
     }
 
-    function getUserName(userId: number): string {
-        const user = users.find((u) => u.id === userId);
-        return user ? user.name : `ユーザー#${userId}`;
-    }
-
     function handleFilterChange() {
         currentPage = 1;
         loadPurchases();
@@ -67,6 +51,10 @@
 
     function formatDate(dateString: string): string {
         return new Date(dateString).toLocaleString("ja-JP");
+    }
+
+    function formatAmount(amount: number): string {
+        return `¥${amount.toLocaleString("ja-JP")}`;
     }
 
     function goToPreviousPage() {
@@ -111,23 +99,6 @@
         </div>
     {/if}
 
-    <div class="filter-section">
-        <div class="filter-group">
-            <label for="user-filter">ユーザーで絞り込む</label>
-            <select
-                id="user-filter"
-                bind:value={selectedUserId}
-                onchange={handleFilterChange}
-                disabled={isLoading}
-            >
-                <option value={null}>すべてのユーザー</option>
-                {#each users as user (user.id)}
-                    <option value={user.id}>{user.name}</option>
-                {/each}
-            </select>
-        </div>
-    </div>
-
     {#if isLoading && purchases.length === 0}
         <div class="loading">読み込み中...</div>
     {:else if purchases.length === 0}
@@ -140,15 +111,17 @@
                         <th>購入ID</th>
                         <th>ユーザー</th>
                         <th>購入日時</th>
+                        <th>合計金額</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     {#each purchases as purchase (purchase.id)}
-                        <tr>
+                        <tr class="purchase-row">
                             <td>#{purchase.id}</td>
-                            <td>{getUserName(purchase.user_id)}</td>
+                            <td>{purchase.user_name}</td>
                             <td>{formatDate(purchase.purchased_at)}</td>
+                            <td class="amount">{formatAmount(purchase.total_amount)}</td>
                             <td>
                                 <button
                                     class="btn btn-delete"
@@ -157,6 +130,29 @@
                                 >
                                     削除
                                 </button>
+                            </td>
+                        </tr>
+                        <tr class="items-row">
+                            <td colspan="5">
+                                <details>
+                                    <summary class="details-summary">商品明細を表示</summary>
+                                    <div class="items-table">
+                                        <div class="items-header">
+                                            <div class="col-product">商品</div>
+                                            <div class="col-quantity">数量</div>
+                                            <div class="col-price">単価</div>
+                                            <div class="col-subtotal">小計</div>
+                                        </div>
+                                        {#each purchase.items as item (item.product_id)}
+                                            <div class="items-row-content">
+                                                <div class="col-product">{item.product_name}</div>
+                                                <div class="col-quantity">{item.quantity}</div>
+                                                <div class="col-price">{formatAmount(item.unit_price)}</div>
+                                                <div class="col-subtotal">{formatAmount(item.subtotal)}</div>
+                                            </div>
+                                        {/each}
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     {/each}
@@ -208,44 +204,6 @@
         border: 1px solid #fcc;
     }
 
-    .filter-section {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        margin-bottom: 2rem;
-    }
-
-    .filter-group {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
-
-    label {
-        font-weight: 500;
-        color: #2c3e50;
-    }
-
-    select {
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 1rem;
-        min-width: 200px;
-    }
-
-    select:focus {
-        outline: none;
-        border-color: #0066cc;
-        box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
-    }
-
-    select:disabled {
-        background-color: #f5f5f5;
-        cursor: not-allowed;
-    }
-
     .loading,
     .empty-notice {
         text-align: center;
@@ -282,12 +240,85 @@
         border-bottom: 1px solid #eee;
     }
 
-    .purchases-table tbody tr:last-child td {
+    .purchases-table tbody .purchase-row:hover {
+        background-color: #f9f9f9;
+    }
+
+    .purchases-table .amount {
+        font-weight: 600;
+        color: #0066cc;
+    }
+
+    .items-row {
+        background-color: #fafafa;
+    }
+
+    .items-row td {
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .details-summary {
+        cursor: pointer;
+        color: #0066cc;
+        font-weight: 500;
+        user-select: none;
+        padding: 0.5rem 0;
+    }
+
+    .details-summary:hover {
+        text-decoration: underline;
+    }
+
+    .items-table {
+        margin-top: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+
+    .items-header {
+        display: grid;
+        grid-template-columns: 1fr 80px 100px 100px;
+        gap: 1rem;
+        padding: 1rem;
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #ddd;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.9rem;
+    }
+
+    .items-row-content {
+        display: grid;
+        grid-template-columns: 1fr 80px 100px 100px;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #eee;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+
+    .items-row-content:last-child {
         border-bottom: none;
     }
 
-    .purchases-table tbody tr:hover {
-        background-color: #f9f9f9;
+    .col-product {
+        text-align: left;
+    }
+
+    .col-quantity {
+        text-align: center;
+    }
+
+    .col-price {
+        text-align: right;
+    }
+
+    .col-subtotal {
+        text-align: right;
+        font-weight: 500;
+        color: #0066cc;
     }
 
     .pagination {
@@ -339,16 +370,6 @@
     }
 
     @media (max-width: 768px) {
-        .filter-group {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        select {
-            width: 100%;
-            min-width: unset;
-        }
-
         .purchases-table {
             font-size: 0.85rem;
         }
@@ -356,6 +377,19 @@
         .purchases-table th,
         .purchases-table td {
             padding: 0.75rem;
+        }
+
+        .items-header {
+            grid-template-columns: 1fr 60px 80px 80px;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .items-row-content {
+            grid-template-columns: 1fr 60px 80px 80px;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
         }
 
         .pagination {

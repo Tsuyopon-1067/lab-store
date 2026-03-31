@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"purchase-system/model"
@@ -140,11 +141,11 @@ func ListPurchases(db *sql.DB) gin.HandlerFunc {
 		limitInt, _ := strconv.Atoi(limit)
 		offsetInt, _ := strconv.Atoi(offset)
 
-		query := "SELECT id, user_id, purchased_at FROM purchases WHERE deleted_at IS NULL ORDER BY purchased_at DESC"
+		query := "SELECT p.id, p.user_id, u.name, p.purchased_at FROM purchases p JOIN users u ON p.user_id = u.id WHERE p.deleted_at IS NULL ORDER BY p.purchased_at DESC"
 		args := []interface{}{}
 
 		if userID != "" {
-			query = "SELECT id, user_id, purchased_at FROM purchases WHERE user_id = ? AND deleted_at IS NULL ORDER BY purchased_at DESC"
+			query = "SELECT p.id, p.user_id, u.name, p.purchased_at FROM purchases p JOIN users u ON p.user_id = u.id WHERE p.user_id = ? AND p.deleted_at IS NULL ORDER BY p.purchased_at DESC"
 			args = append(args, userID)
 		}
 
@@ -158,14 +159,55 @@ func ListPurchases(db *sql.DB) gin.HandlerFunc {
 		}
 		defer rows.Close()
 
-		var purchases []*model.Purchase
+		var purchases []*model.AdminPurchaseWithItems
+		productRepo := repository.NewProductRepository(db)
+		purchaseRepo := repository.NewPurchaseRepository(db)
+
 		for rows.Next() {
-			purchase := &model.Purchase{}
-			if err := rows.Scan(&purchase.ID, &purchase.UserID, &purchase.PurchasedAt); err != nil {
+			var id, userID int
+			var userName string
+			var purchasedAt time.Time
+			if err := rows.Scan(&id, &userID, &userName, &purchasedAt); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 				return
 			}
-			purchases = append(purchases, purchase)
+
+			// Get purchase items
+			items, err := purchaseRepo.GetItemsByPurchaseID(id)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+				return
+			}
+
+			var adminItems []*model.AdminPurchaseItem
+			totalAmount := 0
+			for _, item := range items {
+				product, err := productRepo.GetByID(item.ProductID)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+					return
+				}
+
+				subtotal := item.Quantity * item.UnitPrice
+				totalAmount += subtotal
+
+				adminItems = append(adminItems, &model.AdminPurchaseItem{
+					ProductID:   item.ProductID,
+					ProductName: product.Name,
+					Quantity:    item.Quantity,
+					UnitPrice:   item.UnitPrice,
+					Subtotal:    subtotal,
+				})
+			}
+
+			purchases = append(purchases, &model.AdminPurchaseWithItems{
+				ID:          id,
+				UserID:      userID,
+				UserName:    userName,
+				PurchasedAt: purchasedAt,
+				TotalAmount: totalAmount,
+				Items:       adminItems,
+			})
 		}
 
 		c.JSON(http.StatusOK, purchases)

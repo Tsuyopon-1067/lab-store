@@ -128,6 +128,24 @@ export interface ProductPrice {
 	valid_to: string | null;
 }
 
+export interface AdminPurchaseItem {
+	product_id: number;
+	product_name: string;
+	quantity: number;
+	unit_price: number;
+	subtotal: number;
+}
+
+export interface AdminPurchaseWithItems {
+	id: number;
+	user_id: number;
+	user_name: string;
+	purchased_at: string;
+	total_amount: number;
+	items: AdminPurchaseItem[];
+}
+
+// Legacy type for backward compatibility
 export interface AdminPurchase {
 	id: number;
 	user_id: number;
