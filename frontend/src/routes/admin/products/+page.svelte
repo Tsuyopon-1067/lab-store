@@ -14,6 +14,7 @@
     let modalBarcode = $state("");
     let modalPrice = $state("");
     let modalNote = $state("");
+    let modalStockQuantity = $state("");
     let editingProductId: number | null = null;
 
     // 価格変更モーダル
@@ -53,6 +54,7 @@
         modalBarcode = "";
         modalPrice = "";
         modalNote = "";
+        modalStockQuantity = "0";
         editingProductId = null;
         showModal = true;
     }
@@ -63,6 +65,7 @@
         modalBarcode = product.barcode;
         modalPrice = product.current_price.toString();
         modalNote = product.note || "";
+        modalStockQuantity = product.stock_quantity.toString();
         editingProductId = product.id;
         showModal = true;
     }
@@ -89,6 +92,10 @@
                 errorMessage = "価格を入力してください";
                 return;
             }
+            if (!modalStockQuantity || modalStockQuantity === "") {
+                errorMessage = "在庫数を入力してください";
+                return;
+            }
             if (modalMode === "add") {
                 await apiCallWithAuth("/products", {
                     method: "POST",
@@ -97,6 +104,7 @@
                         barcode: modalBarcode,
                         price: parseInt(modalPrice),
                         note: modalNote || undefined,
+                        stock_quantity: parseInt(modalStockQuantity),
                     }),
                 });
             } else {
@@ -106,8 +114,8 @@
                     body: JSON.stringify({
                         name: modalName,
                         barcode: modalBarcode,
-                        price: parseInt(modalPrice),
                         note: modalNote || undefined,
+                        stock_quantity: parseInt(modalStockQuantity),
                     }),
                 });
             }
@@ -250,6 +258,7 @@
                         <th>商品名</th>
                         <th>バーコード</th>
                         <th>現在価格</th>
+                        <th>在庫数</th>
                         <th>状態</th>
                         <th>メモ</th>
                         <th>操作</th>
@@ -264,6 +273,7 @@
                             <td class="price-cell"
                                 >{formatCurrency(product.current_price)}</td
                             >
+                            <td class="stock-cell">{product.stock_quantity}</td>
                             <td>
                                 <button
                                     class="status-badge"
@@ -359,6 +369,19 @@
                     />
                 </div>
             {/if}
+
+            <div class="form-group">
+                <label for="product-stock">在庫数</label>
+                <input
+                    type="number"
+                    id="product-stock"
+                    bind:value={modalStockQuantity}
+                    placeholder="0"
+                    required
+                    min="0"
+                    disabled={isLoading}
+                />
+            </div>
 
             <div class="form-group">
                 <label for="product-note">メモ</label>
@@ -576,6 +599,11 @@
     .price-cell {
         font-weight: 600;
         color: #0066cc;
+    }
+
+    .stock-cell {
+        font-weight: 500;
+        color: #666;
     }
 
     .note-cell {

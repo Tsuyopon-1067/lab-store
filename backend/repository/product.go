@@ -17,9 +17,9 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 	product := &model.Product{}
 	err := r.db.QueryRow(
-		"SELECT id, name, barcode, is_active, note, created_at FROM products WHERE id = ?",
+		"SELECT id, name, barcode, is_active, note, stock_quantity, created_at FROM products WHERE id = ?",
 		id,
-	).Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.CreatedAt)
+	).Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.StockQuantity, &product.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -32,11 +32,11 @@ func (r *ProductRepository) GetByID(id int) (*model.Product, error) {
 func (r *ProductRepository) GetByBarcode(barcode string) (*model.ProductWithPrice, error) {
 	product := &model.ProductWithPrice{}
 	err := r.db.QueryRow(`
-		SELECT p.id, p.name, p.barcode, p.is_active, p.note, pp.price, p.created_at
+		SELECT p.id, p.name, p.barcode, p.is_active, p.note, pp.price, p.stock_quantity, p.created_at
 		FROM products p
 		JOIN product_prices pp ON pp.product_id = p.id
 		WHERE p.barcode = ? AND p.is_active = 1 AND pp.valid_to IS NULL
-	`, barcode).Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.Price, &product.CreatedAt)
+	`, barcode).Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.Price, &product.StockQuantity, &product.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -48,7 +48,7 @@ func (r *ProductRepository) GetByBarcode(barcode string) (*model.ProductWithPric
 
 func (r *ProductRepository) ListAll() ([]*model.ProductWithPrice, error) {
 	rows, err := r.db.Query(`
-		SELECT p.id, p.name, p.barcode, p.is_active, p.note, COALESCE(pp.price, 0), p.created_at
+		SELECT p.id, p.name, p.barcode, p.is_active, p.note, COALESCE(pp.price, 0), p.stock_quantity, p.created_at
 		FROM products p
 		LEFT JOIN product_prices pp ON pp.product_id = p.id AND pp.valid_to IS NULL
 		ORDER BY p.created_at DESC
@@ -61,7 +61,7 @@ func (r *ProductRepository) ListAll() ([]*model.ProductWithPrice, error) {
 	var products []*model.ProductWithPrice
 	for rows.Next() {
 		product := &model.ProductWithPrice{}
-		if err := rows.Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.Price, &product.CreatedAt); err != nil {
+		if err := rows.Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.Price, &product.StockQuantity, &product.CreatedAt); err != nil {
 			return nil, err
 		}
 		products = append(products, product)
@@ -71,7 +71,7 @@ func (r *ProductRepository) ListAll() ([]*model.ProductWithPrice, error) {
 
 func (r *ProductRepository) Search(query string) ([]*model.ProductWithPrice, error) {
 	rows, err := r.db.Query(`
-		SELECT p.id, p.name, p.barcode, p.is_active, p.note, COALESCE(pp.price, 0), p.created_at
+		SELECT p.id, p.name, p.barcode, p.is_active, p.note, COALESCE(pp.price, 0), p.stock_quantity, p.created_at
 		FROM products p
 		LEFT JOIN product_prices pp ON pp.product_id = p.id AND pp.valid_to IS NULL
 		WHERE p.name LIKE ? OR p.barcode LIKE ?
@@ -85,7 +85,7 @@ func (r *ProductRepository) Search(query string) ([]*model.ProductWithPrice, err
 	var products []*model.ProductWithPrice
 	for rows.Next() {
 		product := &model.ProductWithPrice{}
-		if err := rows.Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.Price, &product.CreatedAt); err != nil {
+		if err := rows.Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.Price, &product.StockQuantity, &product.CreatedAt); err != nil {
 			return nil, err
 		}
 		products = append(products, product)
@@ -93,7 +93,7 @@ func (r *ProductRepository) Search(query string) ([]*model.ProductWithPrice, err
 	return products, rows.Err()
 }
 
-func (r *ProductRepository) Create(name, barcode, note string, price int) (*model.ProductWithPrice, error) {
+func (r *ProductRepository) Create(name, barcode, note string, price, stockQuantity int) (*model.ProductWithPrice, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, err
@@ -101,8 +101,8 @@ func (r *ProductRepository) Create(name, barcode, note string, price int) (*mode
 	defer tx.Rollback()
 
 	result, err := tx.Exec(
-		"INSERT INTO products (name, barcode, is_active, note) VALUES (?, ?, 1, ?)",
-		name, barcode, note,
+		"INSERT INTO products (name, barcode, is_active, note, stock_quantity) VALUES (?, ?, 1, ?, ?)",
+		name, barcode, note, stockQuantity,
 	)
 	if err != nil {
 		return nil, err
@@ -126,31 +126,42 @@ func (r *ProductRepository) Create(name, barcode, note string, price int) (*mode
 	}
 
 	product := &model.ProductWithPrice{
-		ID:        int(productID),
-		Name:      name,
-		Barcode:   barcode,
-		IsActive:  1,
-		Note:      &note,
-		Price:     price,
-		CreatedAt: time.Now(),
+		ID:            int(productID),
+		Name:          name,
+		Barcode:       barcode,
+		IsActive:      1,
+		Note:          &note,
+		Price:         price,
+		StockQuantity: stockQuantity,
+		CreatedAt:     time.Now(),
 	}
 	return product, nil
 }
 
-func (r *ProductRepository) Update(id int, name, barcode, note string) (*model.ProductWithPrice, error) {
-	_, err := r.db.Exec(
-		"UPDATE products SET name = ?, barcode = ?, note = ? WHERE id = ?",
-		name, barcode, note, id,
-	)
-	if err != nil {
-		return nil, err
+func (r *ProductRepository) Update(id int, name, barcode, note string, stockQuantity *int) (*model.ProductWithPrice, error) {
+	if stockQuantity != nil {
+		_, err := r.db.Exec(
+			"UPDATE products SET name = ?, barcode = ?, note = ?, stock_quantity = ? WHERE id = ?",
+			name, barcode, note, *stockQuantity, id,
+		)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_, err := r.db.Exec(
+			"UPDATE products SET name = ?, barcode = ?, note = ? WHERE id = ?",
+			name, barcode, note, id,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	product := &model.Product{}
-	err = r.db.QueryRow(
-		"SELECT id, name, barcode, is_active, note, created_at FROM products WHERE id = ?",
+	err := r.db.QueryRow(
+		"SELECT id, name, barcode, is_active, note, stock_quantity, created_at FROM products WHERE id = ?",
 		id,
-	).Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.CreatedAt)
+	).Scan(&product.ID, &product.Name, &product.Barcode, &product.IsActive, &product.Note, &product.StockQuantity, &product.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -165,13 +176,14 @@ func (r *ProductRepository) Update(id int, name, barcode, note string) (*model.P
 	}
 
 	return &model.ProductWithPrice{
-		ID:        product.ID,
-		Name:      product.Name,
-		Barcode:   product.Barcode,
-		IsActive:  product.IsActive,
-		Note:      product.Note,
-		Price:     price,
-		CreatedAt: product.CreatedAt,
+		ID:            product.ID,
+		Name:          product.Name,
+		Barcode:       product.Barcode,
+		IsActive:      product.IsActive,
+		Note:          product.Note,
+		Price:         price,
+		StockQuantity: product.StockQuantity,
+		CreatedAt:     product.CreatedAt,
 	}, nil
 }
 

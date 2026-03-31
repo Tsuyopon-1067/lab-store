@@ -3,12 +3,13 @@ package model
 import "time"
 
 type Product struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Barcode   string    `json:"barcode"`
-	IsActive  int       `json:"is_active"`
-	Note      *string   `json:"note"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            int       `json:"id"`
+	Name          string    `json:"name"`
+	Barcode       string    `json:"barcode"`
+	IsActive      int       `json:"is_active"`
+	Note          *string   `json:"note"`
+	StockQuantity int       `json:"stock_quantity"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 type ProductPrice struct {
@@ -20,11 +21,12 @@ type ProductPrice struct {
 }
 
 type ProductWithPrice struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Barcode   string    `json:"barcode"`
-	IsActive  int       `json:"is_active"`
-	Note      *string   `json:"note"`
-	Price     int       `json:"current_price"`
-	CreatedAt time.Time `json:"created_at"`
+	ID            int       `json:"id"`
+	Name          string    `json:"name"`
+	Barcode       string    `json:"barcode"`
+	IsActive      int       `json:"is_active"`
+	Note          *string   `json:"note"`
+	Price         int       `json:"current_price"`
+	StockQuantity int       `json:"stock_quantity"`
+	CreatedAt     time.Time `json:"created_at"`
 }

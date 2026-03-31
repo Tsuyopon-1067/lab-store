@@ -10,17 +10,19 @@ import (
 )
 
 type CreateProductRequest struct {
-	Name    string `json:"name" binding:"required"`
-	Barcode string `json:"barcode" binding:"required"`
-	Price   int    `json:"price" binding:"required"`
-	Note    string `json:"note"`
+	Name          string `json:"name" binding:"required"`
+	Barcode       string `json:"barcode" binding:"required"`
+	Price         int    `json:"price" binding:"required"`
+	Note          string `json:"note"`
+	StockQuantity int    `json:"stock_quantity"`
 }
 
 type UpdateProductRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Barcode  string `json:"barcode" binding:"required"`
-	Note     string `json:"note"`
-	IsActive *int   `json:"is_active"`
+	Name          string `json:"name" binding:"required"`
+	Barcode       string `json:"barcode" binding:"required"`
+	Note          string `json:"note"`
+	IsActive      *int   `json:"is_active"`
+	StockQuantity *int   `json:"stock_quantity"`
 }
 
 type ChangePriceRequest struct {
@@ -83,7 +85,7 @@ func CreateProduct(db *sql.DB) gin.HandlerFunc {
 		}
 
 		repo := repository.NewProductRepository(db)
-		product, err := repo.Create(req.Name, req.Barcode, req.Note, req.Price)
+		product, err := repo.Create(req.Name, req.Barcode, req.Note, req.Price, req.StockQuantity)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product"})
 			return
@@ -107,7 +109,7 @@ func UpdateProduct(db *sql.DB) gin.HandlerFunc {
 		}
 
 		repo := repository.NewProductRepository(db)
-		product, err := repo.Update(id, req.Name, req.Barcode, req.Note)
+		product, err := repo.Update(id, req.Name, req.Barcode, req.Note, req.StockQuantity)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product"})
 			return

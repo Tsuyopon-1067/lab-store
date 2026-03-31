@@ -116,6 +116,7 @@ export interface ProductWithPrice {
 	is_active: number;
 	note?: string;
 	current_price: number;
+	stock_quantity: number;
 	created_at: string;
 }
 
