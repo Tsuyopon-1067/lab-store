@@ -6,6 +6,7 @@
 	import ProductSearch from '$lib/components/ProductSearch.svelte';
 	import Cart from '$lib/components/Cart.svelte';
 	import PurchaseReceipt from '$lib/components/PurchaseReceipt.svelte';
+	import { session } from '$lib/stores/session';
 	import type { UserBalance, Product, CartItem, PurchaseRequest, PurchaseResponse } from '$lib/types';
 
 	type PageState = 'idle' | 'purchasing' | 'receipt';
@@ -182,6 +183,14 @@
 		return () => {
 			if (timeoutId) clearTimeout(timeoutId);
 		};
+	});
+
+	$effect(() => {
+		// Subscribe to session reset events
+		const unsubscribe = session.subscribe(() => {
+			resetPurchaseSession();
+		});
+		return unsubscribe;
 	});
 </script>
 

@@ -1,11 +1,19 @@
 <script lang="ts">
 	import { auth } from '$lib/stores/auth';
+	import { session } from '$lib/stores/session';
 </script>
 
 <nav class="navbar">
 	<div class="nav-container">
 		<div class="nav-brand">
-			<a href="/">Lab Store</a>
+			<a
+				href="/"
+				onclick={() => {
+					session.reset();
+				}}
+			>
+				Lab Store
+			</a>
 		</div>
 
 		<ul class="nav-menu">
