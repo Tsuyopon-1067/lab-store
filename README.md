@@ -71,7 +71,7 @@ sudo systemctl enable --now purchase-system
 
 ## ブラウザアクセス
 
-- 開発時: http://localhost:5173
+- 開発時: http://localhost:3000
 - 本番時: http://localhost:3000
 
 ## 外部API（APIキー認証）
