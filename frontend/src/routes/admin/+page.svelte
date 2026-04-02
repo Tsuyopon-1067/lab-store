@@ -49,6 +49,12 @@
         </div>
 
         <div class="card">
+            <h3>支払い金額一覧</h3>
+            <p>利用者ごとの支払い金額を確認</p>
+            <a href="/admin/user-payments" class="btn btn-primary">確認</a>
+        </div>
+
+        <div class="card">
             <h3>バックアップ</h3>
             <p>手動バックアップを実行</p>
             <a href="/admin/backup" class="btn btn-primary">実行</a>

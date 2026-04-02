@@ -78,6 +78,8 @@ func main() {
 		v1.GET("/users/:barcode/balance", handler.GetUserBalance(database))
 		v1.GET("/reports/monthly", handler.GetMonthlyReport(database))
 		v1.GET("/products", handler.ListProductsExternal(database))
+		v1.GET("/users/payment-summary", handler.GetUserPaymentSummary(database))
+		v1.GET("/users/payment-summary/export", handler.ExportUserPaymentSummaryCSV(database))
 	}
 
 	// 管理者用エンドポイント
@@ -99,6 +101,9 @@ func main() {
 		admin.GET("/purchases/export", handler.ExportPurchasesCSV(database))
 		admin.DELETE("/purchases/:id", handler.DeletePurchase(database))
 		admin.GET("/purchases/summary", handler.GetSummary(database))
+
+		admin.GET("/users/payment-summary", handler.GetUserPaymentSummary(database))
+		admin.GET("/users/payment-summary/export", handler.ExportUserPaymentSummaryCSV(database))
 
 		admin.GET("/restocks", handler.ListRestocks(database))
 		admin.PUT("/restocks/:id", handler.UpdateRestock(database))
