@@ -46,14 +46,27 @@ func (c *Config) SetDefaults() {
 		c.Server.Port = 8080
 	}
 	if c.Database.Path == "" || c.Database.Path == "data/purchase.db" {
-		// backend ディレクトリから実行される場合、../data/purchase.db を使用
-		c.Database.Path = "../data/purchase.db"
+		// 本番環境（コンテナ）か開発環境かで判定
+		if _, err := os.Stat("/app"); err == nil {
+			// コンテナ環境
+			c.Database.Path = "/app/data/purchase.db"
+		} else {
+			// 開発環境（backend ディレクトリから実行）
+			c.Database.Path = "../data/purchase.db"
+		}
 	}
 	if c.Session.TimeoutMinutes == 0 {
 		c.Session.TimeoutMinutes = 30
 	}
 	if c.Backup.Path == "" || c.Backup.Path == "backup" {
-		c.Backup.Path = "../backup"
+		// 本番環境（コンテナ）か開発環境かで判定
+		if _, err := os.Stat("/app"); err == nil {
+			// コンテナ環境
+			c.Backup.Path = "/app/backup"
+		} else {
+			// 開発環境
+			c.Backup.Path = "../backup"
+		}
 	}
 	if c.Backup.Interval == 0 {
 		c.Backup.Interval = 60
