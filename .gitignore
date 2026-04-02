@@ -1,0 +1,23 @@
+# 実行時データ
+data/
+backup/
+
+# 設定ファイル（テンプレートのみ管理）
+config.yaml
+
+# Go ビルド成果物
+backend/server
+backend/main
+
+# フロントエンド ビルド成果物
+frontend/.svelte-kit/
+frontend/build/
+frontend/node_modules/
+
+# bun
+frontend/bun.lockb
+
+# OS
+.DS_Store
+Thumbs.db
+compose.override.yaml
