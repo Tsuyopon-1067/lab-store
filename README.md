@@ -184,6 +184,63 @@ GET /v1/products
 ]
 ```
 
+#### 5. 全利用者の支払い金額サマリーを取得
+
+```
+GET /v1/users/payment-summary
+```
+
+全有効利用者の支払い金額サマリーを取得します（期間フィルターなし、全期間の合計）。
+
+**レスポンス例:**
+```json
+[
+  {
+    "user_id": 1,
+    "user_name": "山田 太郎",
+    "purchase_unpaid": 1000,
+    "restock_unclaimed": 500,
+    "net_balance": 500
+  },
+  {
+    "user_id": 2,
+    "user_name": "鈴木 花子",
+    "purchase_unpaid": 2000,
+    "restock_unclaimed": 0,
+    "net_balance": 2000
+  }
+]
+```
+
+**フィールド説明:**
+- `user_id`: 利用者ID
+- `user_name`: 利用者名
+- `purchase_unpaid`: 未払い利用額（購入合計 - 支払い済み合計）
+- `restock_unclaimed`: 未精算仕入れ立替額（仕入れ立替合計 - 精算済み合計）
+- `net_balance`: 最終的な支払い金額（purchase_unpaid - restock_unclaimed）
+  - 正の値：利用者がコミュニティに支払う必要がある金額
+  - 負の値：コミュニティが利用者に支払う必要がある金額
+
+#### 6. 支払い金額サマリーをCSV出力
+
+```
+GET /v1/users/payment-summary/export
+```
+
+全利用者の支払い金額サマリーをCSVファイル形式でダウンロードします。
+
+**CSVヘッダー:**
+```
+ユーザー名,利用額,仕入れ金額,最終的な支払い金額
+```
+
+**使用例:**
+```bash
+curl -H "X-API-Key: YOUR_API_KEY" \
+  http://localhost:8080/v1/users/payment-summary/export \
+  -o user_payment_summary.csv
+```
+
 ### セキュリティ
 
 - API キーは **SHA256 ハッシュ** で保存されます
