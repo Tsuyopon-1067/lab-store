@@ -30,7 +30,7 @@ func (s *SummaryService) GetUserBalance(userID int) (*model.BalanceSummary, erro
 		SELECT COALESCE(SUM(pi.quantity * pi.unit_price), 0)
 		FROM purchases pu
 		JOIN purchase_items pi ON pi.purchase_id = pu.id
-		WHERE pu.user_id = ?
+		WHERE pu.user_id = ? AND pu.deleted_at IS NULL
 	`, userID).Scan(&purchaseTotal)
 	if err != nil {
 		return nil, err
