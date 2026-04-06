@@ -7,10 +7,12 @@ services:
       dockerfile: Containerfile
     container_name: purchase-backend
     restart: unless-stopped
+    userns_mode: keep-id
     volumes:
-      - ./data:/app/data
-      - ./backup:/app/backup
-      - ./config.yaml:/app/config.yaml:ro
+      # :Z を付けてSELinuxラベルを自動調整（SQLiteはディレクトリごとマウントが鉄則）
+      - ./data:/app/data:Z
+      - ./backup:/app/backup:Z
+      - ./config.yaml:/app/config.yaml:ro,Z
     environment:
       - TZ=Asia/Tokyo
     expose:
@@ -24,11 +26,18 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-      - "443:443"
+      - "8443:8443"
     depends_on:
       - backend
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - ./certbot:/var/www/certbot:ro
+      - ./certbot/ssl/fullchain.pem:/etc/letsencrypt/live/default/fullchain.pem:ro,Z
+      - ./certbot/ssl/privkey.pem:/etc/letsencrypt/live/default/privkey.pem:ro,Z
     environment:
       - TZ=Asia/Tokyo
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.250.0/24
