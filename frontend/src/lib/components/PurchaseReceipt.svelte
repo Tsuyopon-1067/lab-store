@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PurchaseResponse } from "$lib/types";
+  import BarcodeInput from "./BarcodeInput.svelte";
   import ctrlBarcode from "$lib/assets/barcodes/ctrlBarcode.svg?url";
 
   interface Props {
@@ -8,6 +9,7 @@
   }
 
   let { receipt, onClose }: Props = $props();
+  let barcodeInput = $state("");
 
   const formatCurrency = (amount: number) =>
     `¥${amount.toLocaleString("ja-JP")}`;
@@ -18,6 +20,9 @@
 </script>
 
 <div class="receipt-overlay">
+  <div class="hidden-barcode-input">
+    <BarcodeInput bind:input={barcodeInput} />
+  </div>
   <div class="receipt-card">
     <h2>購入完了</h2>
     <div class="receipt-header">
@@ -288,6 +293,13 @@
     width: 100%;
     height: auto;
     max-width: 250px;
+  }
+
+  .hidden-barcode-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
   }
 
   @media (max-width: 600px) {
