@@ -15,6 +15,7 @@
 	let pageState: PageState = $state('idle');
 	let currentUser: UserBalance | null = $state(null);
 	let currentUserBarcode: string = $state('');
+	let currentBarcode: string = $state('');
 	let cart: CartItem[] = $state([]);
 	let receipt: PurchaseResponse | null = $state(null);
 	let errorMessage = $state('');
@@ -37,6 +38,7 @@
 		pageState = 'idle';
 		currentUser = null;
 		currentUserBarcode = '';
+		currentBarcode = '';
 		cart = [];
 		receipt = null;
 		errorMessage = '';
@@ -70,9 +72,11 @@
 			currentUser = balance;
 			currentUserBarcode = barcode;
 			pageState = 'purchasing';
+			currentBarcode = '';
 			resetTimeout();
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : '利用者が見つかりません';
+			currentBarcode = '';
 		} finally {
 			isLoading = false;
 		}
@@ -88,8 +92,10 @@
 				`/products/barcode/${encodeURIComponent(barcode)}`,
 			);
 			addProductToCart(product);
+			currentBarcode = '';
 		} catch (err) {
 			errorMessage = '商品が見つかりません。管理画面から商品を追加してください';
+			currentBarcode = '';
 		} finally {
 			isLoading = false;
 		}
@@ -218,7 +224,7 @@
 				<p class="subtitle">バーコードリーダーで利用者をスキャンしてください</p>
 
 				<div class="barcode-section">
-					<BarcodeInput />
+					<BarcodeInput bind:input={currentBarcode} />
 				</div>
 
 				{#if isLoading}
@@ -241,7 +247,7 @@
 				<div class="purchase-section">
 					<div class="left-panel">
 						<div class="barcode-scan-section">
-							<BarcodeInput label="商品をスキャンしてください" />
+							<BarcodeInput label="商品をスキャンしてください" bind:input={currentBarcode} />
 						</div>
 
 						<ProductSearch
