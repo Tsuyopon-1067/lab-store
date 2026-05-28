@@ -86,11 +86,11 @@
             errorMessage = "ユーザーを選択してください";
             return;
         }
-        if (!modalAmount.trim()) {
+        if (!modalAmount || modalAmount === "") {
             errorMessage = "金額を入力してください";
             return;
         }
-        if (!modalDate.trim()) {
+        if (!modalDate) {
             errorMessage = "支払い日を入力してください";
             return;
         }

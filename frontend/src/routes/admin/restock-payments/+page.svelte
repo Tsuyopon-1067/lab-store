@@ -87,11 +87,11 @@
             errorMessage = "ユーザーを選択してください";
             return;
         }
-        if (!modalAmount.trim()) {
+        if (!modalAmount || modalAmount === "") {
             errorMessage = "金額を入力してください";
             return;
         }
-        if (!modalDate.trim()) {
+        if (!modalDate) {
             errorMessage = "精算日を入力してください";
             return;
         }
