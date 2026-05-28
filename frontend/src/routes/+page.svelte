@@ -102,11 +102,14 @@
 			return;
 		}
 
-		const existingItem = cart.find((item) => item.product_id === product.id);
+		const existingItemIndex = cart.findIndex((item) => item.product_id === product.id);
 
-		if (existingItem) {
-			existingItem.quantity++;
-			existingItem.subtotal = existingItem.quantity * existingItem.unit_price;
+		if (existingItemIndex >= 0) {
+			const updatedItem = { ...cart[existingItemIndex] };
+			updatedItem.quantity++;
+			updatedItem.subtotal = updatedItem.quantity * updatedItem.unit_price;
+			cart[existingItemIndex] = updatedItem;
+			cart = cart;
 		} else {
 			const newItem: CartItem = {
 				product_id: product.id,
@@ -124,13 +127,16 @@
 
 	// 数量変更
 	function handleQuantityChange(productId: number, quantity: number) {
-		const item = cart.find((item) => item.product_id === productId);
-		if (item) {
+		const itemIndex = cart.findIndex((item) => item.product_id === productId);
+		if (itemIndex >= 0) {
 			if (quantity < 1) {
 				cart = cart.filter((item) => item.product_id !== productId);
 			} else {
-				item.quantity = quantity;
-				item.subtotal = quantity * item.unit_price;
+				const updatedItem = { ...cart[itemIndex] };
+				updatedItem.quantity = quantity;
+				updatedItem.subtotal = quantity * updatedItem.unit_price;
+				cart[itemIndex] = updatedItem;
+				cart = cart;
 			}
 		}
 		resetTimeout();

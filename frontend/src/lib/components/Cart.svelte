@@ -12,7 +12,7 @@
     const formatCurrency = (amount: number) =>
         `¥${amount.toLocaleString("ja-JP")}`;
 
-    const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+    const total = $derived(items.reduce((sum, item) => sum + item.subtotal, 0));
 </script>
 
 <div class="cart">
