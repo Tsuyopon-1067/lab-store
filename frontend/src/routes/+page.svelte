@@ -8,6 +8,7 @@
 	import PurchaseReceipt from '$lib/components/PurchaseReceipt.svelte';
 	import { session } from '$lib/stores/session';
 	import { CONTROL_BARCODES } from '$lib/constants/controlBarcodes';
+	import ctrlBarcode from '$lib/assets/barcodes/ctrlBarcode.svg?url';
 	import type { UserBalance, Product, CartItem, PurchaseRequest, PurchaseResponse } from '$lib/types';
 
 	type PageState = 'idle' | 'purchasing' | 'receipt';
@@ -297,6 +298,11 @@
 									{isLoading ? '処理中...' : '購入確定'}
 								</button>
 							{/if}
+
+							<div class="control-barcode-section">
+								<p class="control-barcode-label">確定用バーコード</p>
+								<img src={ctrlBarcode} alt="確定用バーコード" class="control-barcode-image" />
+							</div>
 						</div>
 					</div>
 				</div>
@@ -411,6 +417,26 @@
 		margin: 0 0 1rem 0;
 		color: #2c3e50;
 		font-size: 1.1rem;
+	}
+
+	.control-barcode-section {
+		margin-top: 2rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid #e0e0e0;
+		text-align: center;
+	}
+
+	.control-barcode-label {
+		margin: 0 0 1rem 0;
+		color: #666;
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	.control-barcode-image {
+		width: 100%;
+		height: auto;
+		max-width: 250px;
 	}
 
 	.empty-notice {
