@@ -52,6 +52,16 @@
 		resetTimeout();
 		const { barcode } = event.detail;
 
+		// Check for control barcode first (works in all states)
+		if (barcode === CONTROL_BARCODES.CONFIRM_PURCHASE) {
+			if (pageState === 'purchasing') {
+				await handleConfirmPurchase();
+			} else if (pageState === 'receipt') {
+				resetPurchaseSession();
+			}
+			return;
+		}
+
 		if (pageState === 'idle') {
 			// 利用者スキャン
 			await handleUserScan(barcode);
@@ -86,13 +96,6 @@
 
 	// 商品スキャン処理
 	async function handleProductScan(barcode: string) {
-		// Check if barcode is a control barcode
-		if (barcode === CONTROL_BARCODES.CONFIRM_PURCHASE) {
-			await handleConfirmPurchase();
-			currentBarcode = '';
-			return;
-		}
-
 		isLoading = true;
 		errorMessage = '';
 
