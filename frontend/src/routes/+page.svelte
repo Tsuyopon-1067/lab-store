@@ -15,6 +15,7 @@
 	let pageState: PageState = $state('idle');
 	let currentUser: UserBalance | null = $state(null);
 	let currentUserBarcode: string = $state('');
+	let currentBarcode: string = $state('');
 	let cart: CartItem[] = $state([]);
 	let receipt: PurchaseResponse | null = $state(null);
 	let errorMessage = $state('');
@@ -37,6 +38,7 @@
 		pageState = 'idle';
 		currentUser = null;
 		currentUserBarcode = '';
+		currentBarcode = '';
 		cart = [];
 		receipt = null;
 		errorMessage = '';
@@ -70,9 +72,11 @@
 			currentUser = balance;
 			currentUserBarcode = barcode;
 			pageState = 'purchasing';
+			currentBarcode = '';
 			resetTimeout();
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : '利用者が見つかりません';
+			currentBarcode = '';
 		} finally {
 			isLoading = false;
 		}
@@ -88,8 +92,10 @@
 				`/products/barcode/${encodeURIComponent(barcode)}`,
 			);
 			addProductToCart(product);
+			currentBarcode = '';
 		} catch (err) {
 			errorMessage = '商品が見つかりません。管理画面から商品を追加してください';
+			currentBarcode = '';
 		} finally {
 			isLoading = false;
 		}
@@ -102,11 +108,14 @@
 			return;
 		}
 
-		const existingItem = cart.find((item) => item.product_id === product.id);
+		const existingItemIndex = cart.findIndex((item) => item.product_id === product.id);
 
-		if (existingItem) {
-			existingItem.quantity++;
-			existingItem.subtotal = existingItem.quantity * existingItem.unit_price;
+		if (existingItemIndex >= 0) {
+			const updatedItem = { ...cart[existingItemIndex] };
+			updatedItem.quantity++;
+			updatedItem.subtotal = updatedItem.quantity * updatedItem.unit_price;
+			cart[existingItemIndex] = updatedItem;
+			cart = cart;
 		} else {
 			const newItem: CartItem = {
 				product_id: product.id,
@@ -124,13 +133,16 @@
 
 	// 数量変更
 	function handleQuantityChange(productId: number, quantity: number) {
-		const item = cart.find((item) => item.product_id === productId);
-		if (item) {
+		const itemIndex = cart.findIndex((item) => item.product_id === productId);
+		if (itemIndex >= 0) {
 			if (quantity < 1) {
 				cart = cart.filter((item) => item.product_id !== productId);
 			} else {
-				item.quantity = quantity;
-				item.subtotal = quantity * item.unit_price;
+				const updatedItem = { ...cart[itemIndex] };
+				updatedItem.quantity = quantity;
+				updatedItem.subtotal = quantity * updatedItem.unit_price;
+				cart[itemIndex] = updatedItem;
+				cart = cart;
 			}
 		}
 		resetTimeout();
@@ -212,7 +224,7 @@
 				<p class="subtitle">バーコードリーダーで利用者をスキャンしてください</p>
 
 				<div class="barcode-section">
-					<BarcodeInput />
+					<BarcodeInput bind:input={currentBarcode} />
 				</div>
 
 				{#if isLoading}
@@ -235,7 +247,7 @@
 				<div class="purchase-section">
 					<div class="left-panel">
 						<div class="barcode-scan-section">
-							<BarcodeInput label="商品をスキャンしてください" />
+							<BarcodeInput label="商品をスキャンしてください" bind:input={currentBarcode} />
 						</div>
 
 						<ProductSearch
