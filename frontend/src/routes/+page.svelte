@@ -1,486 +1,539 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { apiCall, apiCallWithBarcode } from '$lib/api';
-	import BarcodeInput from '$lib/components/BarcodeInput.svelte';
-	import UserInfo from '$lib/components/UserInfo.svelte';
-	import ProductSearch from '$lib/components/ProductSearch.svelte';
-	import Cart from '$lib/components/Cart.svelte';
-	import PurchaseReceipt from '$lib/components/PurchaseReceipt.svelte';
-	import { session } from '$lib/stores/session';
-	import type { UserBalance, Product, CartItem, PurchaseRequest, PurchaseResponse } from '$lib/types';
+  import { onMount } from "svelte";
+  import { apiCall, apiCallWithBarcode } from "$lib/api";
+  import BarcodeInput from "$lib/components/BarcodeInput.svelte";
+  import UserInfo from "$lib/components/UserInfo.svelte";
+  import ProductSearch from "$lib/components/ProductSearch.svelte";
+  import Cart from "$lib/components/Cart.svelte";
+  import PurchaseReceipt from "$lib/components/PurchaseReceipt.svelte";
+  import { session } from "$lib/stores/session";
+  import { CONTROL_BARCODES } from "$lib/constants/controlBarcodes";
+  import ctrlBarcode from "$lib/assets/barcodes/ctrlBarcode.svg?url";
+  import type {
+    UserBalance,
+    Product,
+    CartItem,
+    PurchaseRequest,
+    PurchaseResponse,
+  } from "$lib/types";
 
-	type PageState = 'idle' | 'purchasing' | 'receipt';
+  type PageState = "idle" | "purchasing" | "receipt";
 
-	// 状態管理
-	let pageState: PageState = $state('idle');
-	let currentUser: UserBalance | null = $state(null);
-	let currentUserBarcode: string = $state('');
-	let currentBarcode: string = $state('');
-	let cart: CartItem[] = $state([]);
-	let receipt: PurchaseResponse | null = $state(null);
-	let errorMessage = $state('');
-	let isLoading = $state(false);
+  // 状態管理
+  let pageState: PageState = $state("idle");
+  let currentUser: UserBalance | null = $state(null);
+  let currentUserBarcode: string = $state("");
+  let currentBarcode: string = $state("");
+  let cart: CartItem[] = $state([]);
+  let receipt: PurchaseResponse | null = $state(null);
+  let errorMessage = $state("");
+  let isLoading = $state(false);
 
-	// タイムアウト設定（ミリ秒）
-	const TIMEOUT_MS = 5 * 60 * 1000; // 5分
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  // タイムアウト設定（ミリ秒）
+  const TIMEOUT_MS = 5 * 60 * 1000; // 5分
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-	// タイムアウトをリセット
-	function resetTimeout() {
-		if (timeoutId) clearTimeout(timeoutId);
-		timeoutId = setTimeout(() => {
-			resetPurchaseSession();
-		}, TIMEOUT_MS);
-	}
+  // タイムアウトをリセット
+  function resetTimeout() {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      resetPurchaseSession();
+    }, TIMEOUT_MS);
+  }
 
-	// 購買セッションをリセット
-	function resetPurchaseSession() {
-		pageState = 'idle';
-		currentUser = null;
-		currentUserBarcode = '';
-		currentBarcode = '';
-		cart = [];
-		receipt = null;
-		errorMessage = '';
-		if (timeoutId) clearTimeout(timeoutId);
-	}
+  // 購買セッションをリセット
+  function resetPurchaseSession() {
+    pageState = "idle";
+    currentUser = null;
+    currentUserBarcode = "";
+    currentBarcode = "";
+    cart = [];
+    receipt = null;
+    errorMessage = "";
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 
-	// バーコードスキャンハンドラー
-	async function handleScan(event: CustomEvent<{ barcode: string }>) {
-		resetTimeout();
-		const { barcode } = event.detail;
+  // バーコードスキャンハンドラー
+  async function handleScan(event: CustomEvent<{ barcode: string }>) {
+    resetTimeout();
+    const { barcode } = event.detail;
 
-		if (pageState === 'idle') {
-			// 利用者スキャン
-			await handleUserScan(barcode);
-		} else if (pageState === 'purchasing') {
-			// 商品スキャン（カート追加）
-			await handleProductScan(barcode);
-		}
-	}
+    // Check for control barcode first (works in all states)
+    if (barcode === CONTROL_BARCODES.CONFIRM_PURCHASE) {
+      if (pageState === "purchasing") {
+        await handleConfirmPurchase();
+      } else if (pageState === "receipt") {
+        resetPurchaseSession();
+      }
+      return;
+    }
 
-	// 利用者スキャン処理
-	async function handleUserScan(barcode: string) {
-		isLoading = true;
-		errorMessage = '';
+    if (pageState === "idle") {
+      // 利用者スキャン
+      await handleUserScan(barcode);
+    } else if (pageState === "purchasing") {
+      // 商品スキャン（カート追加）
+      await handleProductScan(barcode);
+    }
+  }
 
-		try {
-			const balance = await apiCallWithBarcode<UserBalance>(
-				'/me/balance',
-				barcode,
-			);
-			currentUser = balance;
-			currentUserBarcode = barcode;
-			pageState = 'purchasing';
-			currentBarcode = '';
-			resetTimeout();
-		} catch (err) {
-			errorMessage = err instanceof Error ? err.message : '利用者が見つかりません';
-			currentBarcode = '';
-		} finally {
-			isLoading = false;
-		}
-	}
+  // 利用者スキャン処理
+  async function handleUserScan(barcode: string) {
+    isLoading = true;
+    errorMessage = "";
 
-	// 商品スキャン処理
-	async function handleProductScan(barcode: string) {
-		isLoading = true;
-		errorMessage = '';
+    try {
+      const balance = await apiCallWithBarcode<UserBalance>(
+        "/me/balance",
+        barcode
+      );
+      currentUser = balance;
+      currentUserBarcode = barcode;
+      pageState = "purchasing";
+      currentBarcode = "";
+      resetTimeout();
+    } catch (err) {
+      errorMessage =
+        err instanceof Error ? err.message : "利用者が見つかりません";
+      currentBarcode = "";
+    } finally {
+      isLoading = false;
+    }
+  }
 
-		try {
-			const product = await apiCall<Product>(
-				`/products/barcode/${encodeURIComponent(barcode)}`,
-			);
-			addProductToCart(product);
-			currentBarcode = '';
-		} catch (err) {
-			errorMessage = '商品が見つかりません。管理画面から商品を追加してください';
-			currentBarcode = '';
-		} finally {
-			isLoading = false;
-		}
-	}
+  // 商品スキャン処理
+  async function handleProductScan(barcode: string) {
+    isLoading = true;
+    errorMessage = "";
 
-	// カートに商品を追加
-	function addProductToCart(product: Product) {
-		if (!product || product.current_price == null) {
-			errorMessage = '商品データが不正です。管理画面から商品を確認してください';
-			return;
-		}
+    try {
+      const product = await apiCall<Product>(
+        `/products/barcode/${encodeURIComponent(barcode)}`
+      );
+      addProductToCart(product);
+      currentBarcode = "";
+    } catch (err) {
+      errorMessage = "商品が見つかりません。管理画面から商品を追加してください";
+      currentBarcode = "";
+    } finally {
+      isLoading = false;
+    }
+  }
 
-		const existingItemIndex = cart.findIndex((item) => item.product_id === product.id);
+  // カートに商品を追加
+  function addProductToCart(product: Product) {
+    if (!product || product.current_price == null) {
+      errorMessage = "商品データが不正です。管理画面から商品を確認してください";
+      return;
+    }
 
-		if (existingItemIndex >= 0) {
-			const updatedItem = { ...cart[existingItemIndex] };
-			updatedItem.quantity++;
-			updatedItem.subtotal = updatedItem.quantity * updatedItem.unit_price;
-			cart[existingItemIndex] = updatedItem;
-			cart = cart;
-		} else {
-			const newItem: CartItem = {
-				product_id: product.id,
-				product_name: product.name,
-				quantity: 1,
-				unit_price: product.current_price,
-				subtotal: product.current_price,
-			};
-			cart = [...cart, newItem];
-		}
+    const existingItemIndex = cart.findIndex(
+      (item) => item.product_id === product.id
+    );
 
-		errorMessage = '';
-		resetTimeout();
-	}
+    if (existingItemIndex >= 0) {
+      const updatedItem = { ...cart[existingItemIndex] };
+      updatedItem.quantity++;
+      updatedItem.subtotal = updatedItem.quantity * updatedItem.unit_price;
+      cart[existingItemIndex] = updatedItem;
+      cart = cart;
+    } else {
+      const newItem: CartItem = {
+        product_id: product.id,
+        product_name: product.name,
+        quantity: 1,
+        unit_price: product.current_price,
+        subtotal: product.current_price,
+      };
+      cart = [...cart, newItem];
+    }
 
-	// 数量変更
-	function handleQuantityChange(productId: number, quantity: number) {
-		const itemIndex = cart.findIndex((item) => item.product_id === productId);
-		if (itemIndex >= 0) {
-			if (quantity < 1) {
-				cart = cart.filter((item) => item.product_id !== productId);
-			} else {
-				const updatedItem = { ...cart[itemIndex] };
-				updatedItem.quantity = quantity;
-				updatedItem.subtotal = quantity * updatedItem.unit_price;
-				cart[itemIndex] = updatedItem;
-				cart = cart;
-			}
-		}
-		resetTimeout();
-	}
+    errorMessage = "";
+    resetTimeout();
+  }
 
-	// カートから削除
-	function handleRemoveItem(productId: number) {
-		cart = cart.filter((item) => item.product_id !== productId);
-		resetTimeout();
-	}
+  // 数量変更
+  function handleQuantityChange(productId: number, quantity: number) {
+    const itemIndex = cart.findIndex((item) => item.product_id === productId);
+    if (itemIndex >= 0) {
+      if (quantity < 1) {
+        cart = cart.filter((item) => item.product_id !== productId);
+      } else {
+        const updatedItem = { ...cart[itemIndex] };
+        updatedItem.quantity = quantity;
+        updatedItem.subtotal = quantity * updatedItem.unit_price;
+        cart[itemIndex] = updatedItem;
+        cart = cart;
+      }
+    }
+    resetTimeout();
+  }
 
-	// 購入確定
-	async function handleConfirmPurchase() {
-		if (!currentUser || !currentUserBarcode || cart.length === 0) return;
+  // カートから削除
+  function handleRemoveItem(productId: number) {
+    cart = cart.filter((item) => item.product_id !== productId);
+    resetTimeout();
+  }
 
-		isLoading = true;
-		errorMessage = '';
+  // 購入確定
+  async function handleConfirmPurchase() {
+    if (!currentUser || !currentUserBarcode || cart.length === 0) return;
 
-		try {
-			const purchaseRequest: PurchaseRequest = {
-				user_barcode: currentUserBarcode,
-				items: cart.map((item) => ({
-					product_id: item.product_id,
-					quantity: item.quantity,
-				})),
-			};
+    isLoading = true;
+    errorMessage = "";
 
-			const response = await apiCall<PurchaseResponse>('/purchases', {
-				method: 'POST',
-				body: JSON.stringify(purchaseRequest),
-			});
+    try {
+      const purchaseRequest: PurchaseRequest = {
+        user_barcode: currentUserBarcode,
+        items: cart.map((item) => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+        })),
+      };
 
-			receipt = response;
-			pageState = 'receipt';
-			if (timeoutId) clearTimeout(timeoutId);
-		} catch (err) {
-			errorMessage = err instanceof Error ? err.message : '購入に失敗しました';
-		} finally {
-			isLoading = false;
-		}
-	}
+      const response = await apiCall<PurchaseResponse>("/purchases", {
+        method: "POST",
+        body: JSON.stringify(purchaseRequest),
+      });
 
-	// レシート表示後、次の購買へ
-	function handleReceiptClose() {
-		resetPurchaseSession();
-	}
+      receipt = response;
+      pageState = "receipt";
+      if (timeoutId) clearTimeout(timeoutId);
+    } catch (err) {
+      errorMessage = err instanceof Error ? err.message : "購入に失敗しました";
+    } finally {
+      isLoading = false;
+    }
+  }
 
-	onMount(() => {
-		resetTimeout();
-		return () => {
-			if (timeoutId) clearTimeout(timeoutId);
-		};
-	});
+  // レシート表示後、次の購買へ
+  function handleReceiptClose() {
+    resetPurchaseSession();
+  }
 
-	$effect(() => {
-		// Subscribe to session reset events
-		const unsubscribe = session.subscribe(() => {
-			resetPurchaseSession();
-		});
-		return unsubscribe;
-	});
+  onMount(() => {
+    resetTimeout();
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  });
+
+  $effect(() => {
+    // Subscribe to session reset events
+    const unsubscribe = session.subscribe(() => {
+      resetPurchaseSession();
+    });
+    return unsubscribe;
+  });
 </script>
 
 <svelte:window on:scan={handleScan} />
 
 <div class="purchase-page">
-	<!-- エラー表示 -->
-	{#if errorMessage}
-		<div class="alert alert-error">
-			<strong>エラー:</strong> {errorMessage}
-		</div>
-	{/if}
+  <!-- エラー表示 -->
+  {#if errorMessage}
+    <div class="alert alert-error">
+      <strong>エラー:</strong>
+      {errorMessage}
+    </div>
+  {/if}
 
-	<!-- アイドル状態：利用者スキャン待ち -->
-	{#if pageState === 'idle'}
-		<div class="idle-state">
-			<div class="container">
-				<h1>購買画面</h1>
-				<p class="subtitle">バーコードリーダーで利用者をスキャンしてください</p>
+  <!-- アイドル状態：利用者スキャン待ち -->
+  {#if pageState === "idle"}
+    <div class="idle-state">
+      <div class="container">
+        <h1>購買画面</h1>
+        <p class="subtitle">バーコードリーダーで利用者をスキャンしてください</p>
 
-				<div class="barcode-section">
-					<BarcodeInput bind:input={currentBarcode} />
-				</div>
+        <div class="barcode-section">
+          <BarcodeInput bind:input={currentBarcode} />
+        </div>
 
-				{#if isLoading}
-					<div class="loading">処理中...</div>
-				{/if}
-			</div>
-		</div>
+        {#if isLoading}
+          <div class="loading">処理中...</div>
+        {/if}
+      </div>
+    </div>
 
-	<!-- 購買状態：商品追加＆購入確定 -->
-	{:else if pageState === 'purchasing' && currentUser}
-		<div class="purchasing-state">
-			<div class="container">
-				<UserInfo
-					balance={currentUser}
-					onReset={() => {
-						resetPurchaseSession();
-					}}
-				/>
+    <!-- 購買状態：商品追加＆購入確定 -->
+  {:else if pageState === "purchasing" && currentUser}
+    <div class="purchasing-state">
+      <div class="container">
+        <UserInfo
+          balance={currentUser}
+          onReset={() => {
+            resetPurchaseSession();
+          }}
+        />
 
-				<div class="purchase-section">
-					<div class="left-panel">
-						<div class="barcode-scan-section">
-							<BarcodeInput label="商品をスキャンしてください" bind:input={currentBarcode} />
-						</div>
+        <div class="purchase-section">
+          <div class="left-panel">
+            <div class="barcode-scan-section">
+              <BarcodeInput
+                label="商品をスキャンしてください"
+                bind:input={currentBarcode}
+              />
+            </div>
 
-						<ProductSearch
-							onProductAdd={addProductToCart}
-							onError={(msg) => {
-								errorMessage = msg;
-							}}
-						/>
+            <ProductSearch
+              onProductAdd={addProductToCart}
+              onError={(msg) => {
+                errorMessage = msg;
+              }}
+            />
 
-						<Cart
-							items={cart}
-							onQuantityChange={handleQuantityChange}
-							onRemove={handleRemoveItem}
-						/>
-					</div>
+            <Cart
+              items={cart}
+              onQuantityChange={handleQuantityChange}
+              onRemove={handleRemoveItem}
+            />
+          </div>
 
-					<div class="right-panel">
-						<div class="action-panel">
-							<h3>購入確定</h3>
+          <div class="right-panel">
+            <div class="action-panel">
+              <h3>購入確定</h3>
 
-							{#if cart.length === 0}
-								<p class="empty-notice">カートに商品がありません</p>
-								<button disabled class="btn-purchase btn-disabled">
-									購入確定
-								</button>
-							{:else}
-								<div class="total-section">
-									<span class="total-label">合計金額</span>
-									<span class="total-amount">
-										¥{cart.reduce((sum, item) => sum + item.subtotal, 0).toLocaleString('ja-JP')}
-									</span>
-								</div>
+              {#if cart.length === 0}
+                <p class="empty-notice">カートに商品がありません</p>
+                <button disabled class="btn-purchase btn-disabled">
+                  購入確定
+                </button>
+              {:else}
+                <div class="total-section">
+                  <span class="total-label">合計金額</span>
+                  <span class="total-amount">
+                    ¥{cart
+                      .reduce((sum, item) => sum + item.subtotal, 0)
+                      .toLocaleString("ja-JP")}
+                  </span>
+                </div>
 
-								<button
-									onclick={handleConfirmPurchase}
-									disabled={isLoading}
-									class="btn-purchase"
-								>
-									{isLoading ? '処理中...' : '購入確定'}
-								</button>
-							{/if}
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+                <button
+                  onclick={handleConfirmPurchase}
+                  disabled={isLoading}
+                  class="btn-purchase"
+                >
+                  {isLoading ? "処理中..." : "購入確定"}
+                </button>
+              {/if}
 
-	<!-- レシート表示状態 -->
-	{:else if pageState === 'receipt' && receipt}
-		<PurchaseReceipt
-			receipt={receipt}
-			onClose={handleReceiptClose}
-		/>
-	{/if}
+              <div class="control-barcode-section">
+                <p class="control-barcode-label">確定用バーコード</p>
+                <img
+                  src={ctrlBarcode}
+                  alt="確定用バーコード"
+                  class="control-barcode-image"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- レシート表示状態 -->
+  {:else if pageState === "receipt" && receipt}
+    <PurchaseReceipt {receipt} onClose={handleReceiptClose} />
+  {/if}
 </div>
 
 <style>
-	.purchase-page {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		background-color: #f9f9f9;
-	}
+  .purchase-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #f9f9f9;
+  }
 
-	.container {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 2rem;
-		width: 100%;
-	}
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
+  }
 
-	.alert {
-		max-width: 1200px;
-		margin: 0 auto 1.5rem;
-		width: 100%;
-		padding: 1rem;
-		border-radius: 4px;
-		font-weight: 500;
-	}
+  .alert {
+    max-width: 1200px;
+    margin: 0 auto 1.5rem;
+    width: 100%;
+    padding: 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+  }
 
-	.alert-error {
-		background-color: #fee;
-		color: #c00;
-		border: 1px solid #fcc;
-	}
+  .alert-error {
+    background-color: #fee;
+    color: #c00;
+    border: 1px solid #fcc;
+  }
 
-	h1 {
-		margin: 0 0 0.5rem 0;
-		font-size: 2.5rem;
-		text-align: center;
-	}
+  h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2.5rem;
+    text-align: center;
+  }
 
-	.subtitle {
-		text-align: center;
-		color: #666;
-		margin-bottom: 2rem;
-	}
+  .subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 2rem;
+  }
 
-	.idle-state {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+  .idle-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-	.barcode-section {
-		max-width: 500px;
-		margin: 2rem auto 0;
-	}
+  .barcode-section {
+    max-width: 500px;
+    margin: 2rem auto 0;
+  }
 
-	.loading {
-		text-align: center;
-		padding: 2rem;
-		font-size: 1.1rem;
-		color: #0066cc;
-		font-weight: 600;
-	}
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.1rem;
+    color: #0066cc;
+    font-weight: 600;
+  }
 
-	.purchasing-state {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-	}
+  .purchasing-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
 
-	.purchase-section {
-		display: grid;
-		grid-template-columns: 1fr 350px;
-		gap: 2rem;
-		flex: 1;
-	}
+  .purchase-section {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    flex: 1;
+  }
 
-	.left-panel {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
 
-	.right-panel {
-		display: flex;
-		flex-direction: column;
-	}
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+  }
 
-	.action-panel {
-		background-color: white;
-		border: 2px solid #0066cc;
-		border-radius: 8px;
-		padding: 1.5rem;
-		position: sticky;
-		top: 100px;
-	}
+  .action-panel {
+    background-color: white;
+    border: 2px solid #0066cc;
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 100px;
+  }
 
-	.action-panel h3 {
-		margin: 0 0 1rem 0;
-		color: #2c3e50;
-		font-size: 1.1rem;
-	}
+  .action-panel h3 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+  }
 
-	.empty-notice {
-		color: #999;
-		text-align: center;
-		padding: 1rem 0;
-		font-size: 0.95rem;
-	}
+  .control-barcode-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+  }
 
-	.total-section {
-		background-color: #f0f8ff;
-		padding: 1rem;
-		border-radius: 4px;
-		margin-bottom: 1rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
+  .control-barcode-label {
+    margin: 0 0 1rem 0;
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
 
-	.total-label {
-		font-weight: 600;
-		color: #2c3e50;
-	}
+  .control-barcode-image {
+    width: 100%;
+    height: auto;
+    max-width: 250px;
+  }
 
-	.total-amount {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: #0066cc;
-	}
+  .empty-notice {
+    color: #999;
+    text-align: center;
+    padding: 1rem 0;
+    font-size: 0.95rem;
+  }
 
-	.btn-purchase {
-		width: 100%;
-		padding: 1rem;
-		background-color: #0066cc;
-		color: white;
-		border: none;
-		border-radius: 4px;
-		font-size: 1.1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background-color 0.2s;
-	}
+  .total-section {
+    background-color: #f0f8ff;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-	.btn-purchase:hover:not(:disabled) {
-		background-color: #0052a3;
-	}
+  .total-label {
+    font-weight: 600;
+    color: #2c3e50;
+  }
 
-	.btn-purchase:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
+  .total-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0066cc;
+  }
 
-	.btn-disabled {
-		background-color: #ccc;
-		cursor: not-allowed;
-	}
+  .btn-purchase {
+    width: 100%;
+    padding: 1rem;
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
 
-	@media (max-width: 1024px) {
-		.purchase-section {
-			grid-template-columns: 1fr;
-		}
+  .btn-purchase:hover:not(:disabled) {
+    background-color: #0052a3;
+  }
 
-		.action-panel {
-			position: static;
-		}
-	}
+  .btn-purchase:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
-	@media (max-width: 768px) {
-		.container {
-			padding: 1rem;
-		}
+  .btn-disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
 
-		h1 {
-			font-size: 1.5rem;
-		}
+  @media (max-width: 1024px) {
+    .purchase-section {
+      grid-template-columns: 1fr;
+    }
 
-		.purchase-section {
-			gap: 1rem;
-		}
-	}
+    .action-panel {
+      position: static;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .container {
+      padding: 1rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    .purchase-section {
+      gap: 1rem;
+    }
+  }
 </style>
