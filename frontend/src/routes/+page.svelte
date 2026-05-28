@@ -7,6 +7,7 @@
 	import Cart from '$lib/components/Cart.svelte';
 	import PurchaseReceipt from '$lib/components/PurchaseReceipt.svelte';
 	import { session } from '$lib/stores/session';
+	import { CONTROL_BARCODES } from '$lib/constants/controlBarcodes';
 	import type { UserBalance, Product, CartItem, PurchaseRequest, PurchaseResponse } from '$lib/types';
 
 	type PageState = 'idle' | 'purchasing' | 'receipt';
@@ -84,6 +85,13 @@
 
 	// 商品スキャン処理
 	async function handleProductScan(barcode: string) {
+		// Check if barcode is a control barcode
+		if (barcode === CONTROL_BARCODES.CONFIRM_PURCHASE) {
+			await handleConfirmPurchase();
+			currentBarcode = '';
+			return;
+		}
+
 		isLoading = true;
 		errorMessage = '';
 
