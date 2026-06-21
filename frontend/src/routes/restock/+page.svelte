@@ -16,6 +16,7 @@
 	let errorMessage = $state('');
 	let isLoading = $state(false);
 	let restockNote = $state('');
+	let productBarcodeInput = $state('');
 
 	// モーダル状態
 	let showModal = $state(false);
@@ -136,6 +137,7 @@
 		showModal = false;
 		modalProduct = null;
 		errorMessage = '';
+		productBarcodeInput = '';
 		resetTimeout();
 	}
 
@@ -245,7 +247,7 @@
 						<div class="product-input-section">
 							<h3>商品追加</h3>
 							<p class="hint">商品バーコードをスキャンしてください</p>
-							<BarcodeInput />
+							<BarcodeInput bind:input={productBarcodeInput} />
 						</div>
 
 						<div class="restock-list">
