@@ -56,6 +56,15 @@ func (r *RestockRepository) Create(userID int, totalAmount int, note string, ite
 			return nil, nil, err
 		}
 
+		// Increment product stock quantity
+		_, err = tx.Exec(
+			"UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?",
+			item.Quantity, item.ProductID,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+
 		restockItems = append(restockItems, &model.RestockItem{
 			ID:        int(itemID),
 			RestockID: int(restockID),
@@ -181,6 +190,30 @@ func (r *RestockRepository) Update(id int, totalAmount int, note string, items [
 	// 監査ログ記録用のJSON
 	oldJSON, _ := json.Marshal(oldRestock)
 
+	// Restore stock quantities for old items
+	oldRows, err := tx.Query(
+		"SELECT product_id, quantity FROM restock_items WHERE restock_id = ?",
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	defer oldRows.Close()
+
+	for oldRows.Next() {
+		var productID, quantity int
+		if err := oldRows.Scan(&productID, &quantity); err != nil {
+			return err
+		}
+		_, err = tx.Exec(
+			"UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
+			quantity, productID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	now := time.Now()
 	_, err = tx.Exec(
 		"UPDATE restocks SET total_amount = ?, note = ?, updated_at = ? WHERE id = ?",
@@ -196,11 +229,20 @@ func (r *RestockRepository) Update(id int, totalAmount int, note string, items [
 		return err
 	}
 
-	// 新しいアイテムを作成
+	// 新しいアイテムを作成（在庫も加算）
 	for _, item := range items {
 		_, err := tx.Exec(
 			"INSERT INTO restock_items (restock_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)",
 			id, item.ProductID, item.Quantity, item.UnitPrice,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Increment product stock quantity for new items
+		_, err = tx.Exec(
+			"UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?",
+			item.Quantity, item.ProductID,
 		)
 		if err != nil {
 			return err
@@ -248,6 +290,30 @@ func (r *RestockRepository) Delete(id int) error {
 	}
 
 	oldJSON, _ := json.Marshal(oldRestock)
+
+	// Restore stock quantities for all items in this restock
+	rows, err := tx.Query(
+		"SELECT product_id, quantity FROM restock_items WHERE restock_id = ?",
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var productID, quantity int
+		if err := rows.Scan(&productID, &quantity); err != nil {
+			return err
+		}
+		_, err = tx.Exec(
+			"UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?",
+			quantity, productID,
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	now := time.Now()
 	_, err = tx.Exec(
