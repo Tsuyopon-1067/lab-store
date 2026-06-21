@@ -239,12 +239,13 @@ DROP TABLE users;
 ```sql
 -- +goose Up
 CREATE TABLE products (
-    id         INTEGER  PRIMARY KEY AUTOINCREMENT,
-    name       TEXT     NOT NULL,
-    barcode    TEXT     NOT NULL UNIQUE,
-    is_active  INTEGER  NOT NULL DEFAULT 1,
-    note       TEXT,
-    created_at DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
+    id              INTEGER  PRIMARY KEY AUTOINCREMENT,
+    name            TEXT     NOT NULL,
+    barcode         TEXT     NOT NULL UNIQUE,
+    is_active       INTEGER  NOT NULL DEFAULT 1,
+    note            TEXT,
+    stock_quantity  INTEGER  NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
 
 -- +goose Down
@@ -551,6 +552,32 @@ WHERE u.is_active = 1
 GROUP BY u.id;
 ```
 
+### 在庫管理トランザクション
+
+**購入時:** `stock_quantity` を減算
+```sql
+UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?
+```
+
+**仕入れ登録時:** `stock_quantity` を加算
+```sql
+UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?
+```
+
+**仕入れ更新時:**
+- 古いアイテムの在庫を復元（減算）
+- 新しいアイテムの在庫を加算
+
+**購入削除時:** 商品の在庫を復元（加算）
+```sql
+UPDATE products SET stock_quantity = stock_quantity + ? WHERE id = ?
+```
+
+**仕入れ削除時:** 商品の在庫を復元（減算）
+```sql
+UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?
+```
+
 ---
 
 ## 7. Gin ルーター構成（main.go）
@@ -562,8 +589,10 @@ r := gin.Default()
 r.GET("/api/users/barcode/:code",    handler.GetUserByBarcode(db))
 r.GET("/api/products/barcode/:code", handler.GetProductByBarcode(db))
 r.GET("/api/products",               handler.ListProducts(db))
+r.GET("/api/products/stock",         handler.ListProductStock(db))      // 在庫一覧
+r.GET("/api/products/:id/stock",     handler.GetProductStock(db))        // 商品在庫
 r.POST("/api/purchases",             handler.CreatePurchase(db))
-r.POST("/api/restocks",              handler.CreateRestock(db))   // 仕入れ登録
+r.POST("/api/restocks",              handler.CreateRestock(db))         // 仕入れ登録
 
 // 一般利用者（X-User-Barcodeヘッダで本人確認）
 me := r.Group("/api/me", middleware.BarcodeAuth(db))

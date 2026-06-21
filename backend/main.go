@@ -57,6 +57,8 @@ func main() {
 	r.GET("/api/products/barcode/:code", handler.GetProductByBarcode(database))
 	r.GET("/api/products/search", handler.SearchProducts(database))
 	r.GET("/api/products", handler.ListProducts(database))
+	r.GET("/api/products/stock", handler.ListProductStock(database))
+	r.GET("/api/products/:id/stock", handler.GetProductStock(database))
 	r.POST("/api/purchases", handler.CreatePurchase(database))
 	r.POST("/api/restocks", handler.CreateRestock(database))
 

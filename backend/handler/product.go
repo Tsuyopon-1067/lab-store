@@ -174,3 +174,61 @@ func GetPriceHistory(db *sql.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, prices)
 	}
 }
+
+type ProductStockResponse struct {
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Barcode       string `json:"barcode"`
+	StockQuantity int    `json:"stock_quantity"`
+}
+
+func GetProductStock(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+			return
+		}
+
+		repo := repository.NewProductRepository(db)
+		product, err := repo.GetByID(id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+		if product == nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			return
+		}
+
+		response := ProductStockResponse{
+			ID:            product.ID,
+			Name:          product.Name,
+			Barcode:       product.Barcode,
+			StockQuantity: product.StockQuantity,
+		}
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+func ListProductStock(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		repo := repository.NewProductRepository(db)
+		products, err := repo.ListAll()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+
+		var responses []ProductStockResponse
+		for _, product := range products {
+			responses = append(responses, ProductStockResponse{
+				ID:            product.ID,
+				Name:          product.Name,
+				Barcode:       product.Barcode,
+				StockQuantity: product.StockQuantity,
+			})
+		}
+		c.JSON(http.StatusOK, responses)
+	}
+}

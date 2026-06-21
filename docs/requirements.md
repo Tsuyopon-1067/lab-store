@@ -107,7 +107,7 @@
 
 ```
 products（商品マスター）
-  └─ id, name, barcode, is_active, created_at, note
+  └─ id, name, barcode, is_active, note, stock_quantity, created_at
 
 product_prices（価格履歴）
   └─ id, product_id, price, valid_from, valid_to
@@ -117,6 +117,7 @@ product_prices（価格履歴）
 - バーコードと商品は常に1対1で対応する
 - 価格変更時は旧レコードの `valid_to` に現在日時を設定し、新レコードを作成する
 - 購入履歴は `unit_price` に購入時の価格をスナップショット保存する
+- `stock_quantity` は購入時に減算、仕入時に加算される。商品管理画面で直接編集可能
 
 ### 5.2 GUI操作（商品管理画面・管理者）
 
@@ -124,6 +125,7 @@ product_prices（価格履歴）
 - 商品の新規追加・編集・有効/無効切り替え
 - 価格変更（旧価格の終了＋新価格の登録を自動実行）
 - 価格履歴の表示
+- 在庫数の表示・直接編集（購入・仕入れによる自動調整に加え、手動修正が可能）
 
 ---
 
@@ -195,7 +197,8 @@ product_prices（価格履歴）
 | 仕入れ単価 | 実際の仕入れ単価（円） |
 
 - 仕入れ金額の合計は明細の合計と一致することが望ましいが、端数調整等のため手入力の合計を正とする
-- 仕入れ登録後、管理者は内容の修正・削除が可能
+- 仕入れ登録時に各商品の在庫数（`stock_quantity`）を加算する
+- 仕入れ登録後、管理者は内容の修正・削除が可能。修正・削除時は在庫を正確に調整する
 
 ### 6.3 購入履歴閲覧（一般利用者）
 
@@ -315,6 +318,8 @@ product_prices（価格履歴）
 | POST | `/api/products/{id}/change-price` | 管理者のみ | 価格変更 |
 | GET | `/api/products/{id}/prices` | 管理者のみ | 価格履歴取得 |
 | GET | `/api/products/barcode/{code}` | 不要 | バーコードで商品検索（有効商品のみ） |
+| GET | `/api/products/stock` | 不要 | 全商品の在庫一覧取得 |
+| GET | `/api/products/{id}/stock` | 不要 | 特定商品の在庫取得 |
 
 #### 購買
 
@@ -464,7 +469,7 @@ users（利用者）
   └─ id, name, barcode, is_active, created_at
 
 products（商品マスター）
-  └─ id, name, barcode, is_active, created_at, note
+  └─ id, name, barcode, is_active, note, stock_quantity, created_at
 
 product_prices（価格履歴）
   └─ id, product_id → products.id
@@ -530,5 +535,4 @@ backups（バックアップ履歴）
 |------|------|
 | 商品画像 | 商品一覧に画像を表示するかどうかは未定 |
 | 通知機能 | 月次精算時のメール通知等は現スコープ外 |
-| 在庫管理 | 在庫数の管理は現スコープ外 |
 | 管理者の複数アカウント | 現状は管理者1アカウントを想定 |
